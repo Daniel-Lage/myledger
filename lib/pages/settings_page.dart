@@ -50,7 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       leading: BackButton(
         onPressed: () {
-          Navigator.pop(context, updatedSettings);
+          Navigator.pop(context, {"settings": updatedSettings});
         },
       ),
     ),

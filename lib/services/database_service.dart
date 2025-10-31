@@ -34,10 +34,11 @@ class DatabaseService {
         $_contactsDebtColumnName INTEGER NOT NULL
       )''');
       db.execute('''CREATE TABLE $_transactionsTableName (
-        $_transactionsIdColumnName INTEGER PRIMARY KEY,
+        $_transactionsIdColumnName INTEGER NOT NULL AUTO_INCREMENT,
         $_transactionsContactNameColumnName TEXT,
         $_transactionsValueColumnName INTEGER,
-        $_transactionsTypeColumnName INTEGER
+        $_transactionsTypeColumnName INTEGER,
+        PRIMARY KEY ($_transactionsIdColumnName)
       )''');
     },
   );
@@ -112,7 +113,6 @@ class DatabaseService {
     return transactionsTable
         .map(
           (transactionMap) => TransactionObject(
-            id: transactionMap[_transactionsIdColumnName] as int,
             contactName:
                 transactionMap[_transactionsContactNameColumnName] as String,
             value: transactionMap[_transactionsValueColumnName] as int,
@@ -136,7 +136,6 @@ class DatabaseService {
     return transactionsTable
         .map(
           (transactionMap) => TransactionObject(
-            id: transactionMap[_transactionsIdColumnName] as int,
             contactName:
                 transactionMap[_transactionsContactNameColumnName] as String,
             value: transactionMap[_transactionsValueColumnName] as int,
@@ -152,7 +151,6 @@ class DatabaseService {
     final db = await database;
     await db.insert(_transactionsTableName, {
       _transactionsContactNameColumnName: transaction.contactName,
-      _transactionsIdColumnName: transaction.id,
       _transactionsValueColumnName: transaction.value,
       _transactionsTypeColumnName: transaction.type == TransactionType.minus
           ? 1

@@ -18,7 +18,7 @@ class _NewContactPageState extends State<NewContactPage> {
   void _addContact() {
     final contact = ContactObject(name: text);
     _databaseService.addContact(contact);
-    Navigator.pop(context, contact);
+    Navigator.pop(context, {"contact": contact});
   }
 
   @override
@@ -27,7 +27,7 @@ class _NewContactPageState extends State<NewContactPage> {
       backgroundColor: Theme.of(context).colorScheme.primary,
       iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
       title: Text(
-        'Criar contato',
+        'Criar Contato',
         style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
       ),
     ),

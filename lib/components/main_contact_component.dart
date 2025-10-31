@@ -10,8 +10,13 @@ class MainContactComponent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 100,
-
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
+        border: BoxBorder.all(
+          color: Theme.of(context).colorScheme.onSecondary,
+          width: 2,
+        ),
+      ),
 
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -12,3 +12,5 @@ class ContactCompareFunction {
 }
 
 enum ContactCompareKey { name, debt }
+
+enum ContactPageAction { none, update, delete }

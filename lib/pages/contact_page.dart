@@ -14,52 +14,27 @@ class ContactPage extends StatefulWidget {
 }
 
 class _ContactPageState extends State<ContactPage> {
+  bool _updated = false;
   final String initialText = CurrencyInputFormatter.formatter.format(0);
   ContactObject? _contact;
   List<TransactionObject> _transactionsList = <TransactionObject>[];
-  final TextEditingController _toController = TextEditingController();
-  final TextEditingController _fromController = TextEditingController();
   final DatabaseService _databaseService = DatabaseService.instance;
 
   int toValue = 0;
   int fromValue = 0;
 
-  void _doTransaction() {
-    if (_contact == null) return;
-
-    final value = toValue == 0 ? fromValue : -toValue;
-
-    final newTransaction = TransactionObject(
-      contactName: _contact!.name,
-      id: _transactionsList.length,
-      value: value.abs(),
-      type: toValue == 0 ? TransactionType.plus : TransactionType.minus,
-    );
-
-    setState(() {
-      _transactionsList.add(newTransaction);
-      _contact?.debt -= value;
-      toValue = 0;
-      fromValue = 0;
-    });
-
-    _databaseService.updateContact(_contact!);
-    _databaseService.addTransaction(newTransaction);
-    _toController.text = initialText;
-    _fromController.text = initialText;
-  }
-
   @override
   void initState() {
     super.initState();
-    _toController.text = initialText;
-    _fromController.text = initialText;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Object? args = ModalRoute.of(context)?.settings.arguments;
 
       if (args == null) return;
 
-      ContactObject selectedContact = args as ContactObject;
+      Map<String, Object> argsMap = args as Map<String, Object>;
+
+      ContactObject selectedContact = argsMap["contact"] as ContactObject;
+
       setState(() {
         _contact = selectedContact;
       });
@@ -76,6 +51,53 @@ class _ContactPageState extends State<ContactPage> {
       _transactionsList = transactionsTable;
     });
   }
+
+  Future<void> _goToNewTransaction() async {
+    Object? args = await Navigator.of(
+      context,
+    ).pushNamed("/new_transaction", arguments: {"contact": _contact!});
+
+    if (args == null) return;
+
+    Map<String, Object> argsMap = args as Map<String, Object>;
+
+    final newTransaction = argsMap["transaction"] as TransactionObject;
+
+    setState(() {
+      _transactionsList.add(newTransaction);
+      _updated = true;
+    });
+  }
+
+  void _removeContact(String name) {
+    _databaseService.removeContact(name);
+    Navigator.pop(context, {
+      "contact": _contact!,
+      "action": ContactPageAction.delete,
+    });
+  }
+
+  Future<void> _removeContactDialogBuilder(BuildContext context, String name) =>
+      showDialog<void>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text("Excluir contato?"),
+          content: Text("As transações armazenadas também serão perdidas."),
+          actions: [
+            IconButton(
+              onPressed: () {
+                _removeContact(name);
+                Navigator.pop(context, {
+                  "contact": _contact!,
+                  "action": ContactPageAction.delete,
+                });
+              },
+              icon: Icon(Icons.remove),
+              style: IconButton.styleFrom(backgroundColor: Colors.red),
+            ),
+          ],
+        ),
+      );
 
   Widget loading() => Scaffold(
     appBar: AppBar(
@@ -117,7 +139,7 @@ class _ContactPageState extends State<ContactPage> {
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
             title: Text(
-              _contact!.name,
+              "Contato",
               style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
             ),
             iconTheme: IconThemeData(
@@ -126,104 +148,40 @@ class _ContactPageState extends State<ContactPage> {
 
             leading: BackButton(
               onPressed: () {
-                Navigator.pop(context, _contact);
+                Navigator.pop(context, {
+                  "contact": _contact!,
+                  "action": _updated
+                      ? ContactPageAction.update
+                      : ContactPageAction.none,
+                });
               },
             ),
           ),
           body: Center(
             child: ListView(
               children: <Widget>[
-                SizedBox(height: 10),
-                Text(
-                  resolveDebt(_contact!.debt, _contact!.name),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20),
-                ),
-                Padding(
-                  padding: EdgeInsetsGeometry.symmetric(vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: 10,
-                    children: <Widget>[
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width / 2 - 75,
-                        child: TextField(
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            CurrencyInputFormatter(),
-                          ],
-                          controller: _toController,
-                          onChanged: (text) {
-                            setState(() {
-                              toValue =
-                                  (CurrencyInputFormatter.formatter.parse(
-                                            text,
-                                          ) *
-                                          100)
-                                      .floor();
-                            });
-                          },
-                          onSubmitted: (_) => toValue == 0 && fromValue == 0
-                              ? null
-                              : _doTransaction(),
-                          readOnly: fromValue != 0,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Você',
-                          ),
-                        ),
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context).colorScheme.onSecondary,
                       ),
-                      IconButton(
-                        color: toValue == 0 && fromValue == 0
-                            ? Colors.grey
-                            : Theme.of(context).colorScheme.primary,
-                        constraints: BoxConstraints(),
-                        onPressed: toValue == 0 && fromValue == 0
-                            ? null
-                            : () => _doTransaction(),
-                        icon: Icon(
-                          toValue == 0 && fromValue == 0
-                              ? Icons.remove
-                              : toValue == 0
-                              ? Icons.arrow_back
-                              : Icons.arrow_forward,
-                        ),
-                        iconSize: 25,
-                        padding: EdgeInsets.zero,
-                      ),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width / 2 - 75,
-                        child: TextField(
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            CurrencyInputFormatter(),
-                          ],
-                          controller: _fromController,
-                          onChanged: (text) {
-                            setState(() {
-                              fromValue =
-                                  (CurrencyInputFormatter.formatter.parse(
-                                            text,
-                                          ) *
-                                          100)
-                                      .floor();
-                            });
-                          },
-                          onSubmitted: (_) => toValue == 0 && fromValue == 0
-                              ? null
-                              : _doTransaction(),
-                          readOnly: toValue != 0,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: _contact!.name,
-                          ),
-                        ),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.person, size: 100),
+
+                      Text(
+                        formatDebt(_contact!.debt, _contact!.name),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 20),
                       ),
                     ],
                   ),
                 ),
+
                 Text(
                   'Transações',
                   textAlign: TextAlign.center,
@@ -233,13 +191,41 @@ class _ContactPageState extends State<ContactPage> {
                   (transaction) =>
                       TransactionComponent(transaction: transaction),
                 ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.only(top: 10),
+                      width: MediaQuery.of(context).size.width - 100,
+                      height: 50,
+                      child: TextButton(
+                        onPressed: () => _removeContactDialogBuilder(
+                          context,
+                          _contact!.name,
+                        ),
+                        child: Text("Excluir Contato"),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
+          ),
+          floatingActionButton: IconButton(
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+            onPressed: _goToNewTransaction,
+            icon: Icon(Icons.add),
+            iconSize: 40,
+            color: Theme.of(context).colorScheme.onPrimary,
+            padding: EdgeInsetsGeometry.all(10),
           ),
         );
 }
 
-String resolveDebt(int debt, String name) {
+String formatDebt(int debt, String name) {
   String debtString = CurrencyInputFormatter.formatter.format(debt.abs() / 100);
   if (debt > 0) return "$name te deve $debtString";
   if (debt < 0) return "Você deve $debtString a $name";
