@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/components/contact_component.dart';
-import 'package:flutter_project/models/contact_model.dart';
-import 'package:flutter_project/services/database_service.dart';
+import 'package:myledger/components/contact_component.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/models/preferences_model.dart';
+import 'package:myledger/services/database_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,33 +31,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _goToNewContact() async {
-    Object? args = await Navigator.of(context).pushNamed("/new_contact");
-
-    if (args == null) return;
-
-    Map<String, Object> argsMap = args as Map<String, Object>;
-
-    final newContact = argsMap["contact"] as ContactObject;
-
+    NewContactResults args =
+        await Navigator.of(context).pushNamed("/new_contact")
+            as NewContactResults;
     setState(() {
-      _contactList.add(newContact);
+      _contactList.add(args.contact);
     });
   }
 
   Future<void> _goToContact(ContactObject contact) async {
-    Object? args = await Navigator.of(
-      context,
-    ).pushNamed('/contact', arguments: {"contact": contact});
+    ContactResults args =
+        await Navigator.of(context).pushNamed(
+              '/contact',
+              arguments: ContactArguments(contact: contact),
+            )
+            as ContactResults;
 
-    if (args == null) return;
-
-    Map<String, Object> argsMap = args as Map<String, Object>;
-
-    final action = argsMap["action"] as ContactPageAction;
-
-    switch (action) {
+    switch (args.action) {
       case ContactPageAction.update:
-        final updatedContact = argsMap["contact"] as ContactObject;
+        final updatedContact = args.contact;
 
         final index = _contactList.indexWhere(
           (contact) => contact.name == updatedContact.name,
@@ -67,7 +60,7 @@ class _HomePageState extends State<HomePage> {
         });
         break;
       case ContactPageAction.delete:
-        final updatedContact = argsMap["contact"] as ContactObject;
+        final updatedContact = args.contact;
 
         final index = _contactList.indexWhere(
           (contact) => contact.name == updatedContact.name,
@@ -83,14 +76,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _goToPrefs() async {
-    Object? args = await Navigator.of(context).pushNamed("/settings");
+    PreferencesResults args =
+        await Navigator.of(context).pushNamed("/preferences")
+            as PreferencesResults;
 
-    if (args == null) return;
-    Map<String, Object> argsMap = args as Map<String, Object>;
-
-    final updatedSettings = argsMap["settings"] as Map<String, bool>;
-
-    if (updatedSettings["isUsingLocalContacts"] == true) {
+    if (args.actions.updatedIsUsingLocalContacts == true ||
+        args.actions.dataErased == true) {
       loadState();
     }
   }
@@ -98,7 +89,7 @@ class _HomePageState extends State<HomePage> {
   List<ContactObject> _getSortedContacts() {
     switch (_compareKey) {
       case ContactCompareKey.debt:
-        _contactList.sort((a, b) => a.debt.abs().compareTo(b.debt.abs()));
+        _contactList.sort((a, b) => b.debt.abs().compareTo(a.debt.abs()));
         break;
       case ContactCompareKey.name:
         _contactList.sort((a, b) => a.name.compareTo(b.name));

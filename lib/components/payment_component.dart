@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/models/transaction_model.dart';
-import 'package:flutter_project/currency_input_formatter.dart';
+import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/currency_input_formatter.dart';
 
-class TransactionComponent extends StatelessWidget {
-  final TransactionObject transaction;
+class PaymentComponent extends StatelessWidget {
+  final PaymentObject payment;
 
-  const TransactionComponent({super.key, required this.transaction});
+  const PaymentComponent({super.key, required this.payment});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -31,15 +31,11 @@ class TransactionComponent extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Icon(
-                  transaction.type == TransactionType.minus
-                      ? Icons.remove
-                      : Icons.add,
+                  payment.type == PaymentType.minus ? Icons.remove : Icons.add,
                   size: 25,
                 ),
                 Text(
-                  CurrencyInputFormatter.formatter.format(
-                    transaction.value / 100,
-                  ),
+                  CurrencyInputFormatter.formatter.format(payment.value / 100),
                   style: TextStyle(fontSize: 20),
                 ),
               ],

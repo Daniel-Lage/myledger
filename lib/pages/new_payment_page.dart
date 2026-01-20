@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_project/currency_input_formatter.dart';
-import 'package:flutter_project/models/contact_model.dart';
-import 'package:flutter_project/models/transaction_model.dart';
-import 'package:flutter_project/services/database_service.dart';
+import 'package:myledger/currency_input_formatter.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/services/database_service.dart';
 
-class NewTransactionPage extends StatefulWidget {
-  const NewTransactionPage({super.key});
+class NewPaymentPage extends StatefulWidget {
+  const NewPaymentPage({super.key});
 
   @override
-  State<NewTransactionPage> createState() => _NewTransactionPageState();
+  State<NewPaymentPage> createState() => _NewPaymentPageState();
 }
 
-class _NewTransactionPageState extends State<NewTransactionPage> {
+class _NewPaymentPageState extends State<NewPaymentPage> {
   final DatabaseService _databaseService = DatabaseService.instance;
 
   final TextEditingController _toController = TextEditingController();
@@ -31,29 +31,24 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
     _toController.text = initialText;
     _fromController.text = initialText;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Object? args = ModalRoute.of(context)?.settings.arguments;
-
-      if (args == null) return;
-
-      Map<String, Object> argsMap = args as Map<String, Object>;
-
-      ContactObject selectedContact = argsMap["contact"] as ContactObject;
+      NewPaymentArguments args =
+          ModalRoute.of(context)?.settings.arguments as NewPaymentArguments;
 
       setState(() {
-        _contact = selectedContact;
+        _contact = args.contact;
       });
     });
   }
 
-  void _addTransaction() {
+  void _addPayment() {
     if (_contact == null) return;
 
     final value = toValue == 0 ? fromValue : -toValue;
 
-    final transaction = TransactionObject(
+    final payment = PaymentObject(
       contactName: _contact!.name,
       value: value.abs(),
-      type: toValue == 0 ? TransactionType.plus : TransactionType.minus,
+      type: toValue == 0 ? PaymentType.plus : PaymentType.minus,
     );
 
     setState(() {
@@ -63,11 +58,11 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
     });
 
     _databaseService.updateContact(_contact!);
-    _databaseService.addTransaction(transaction);
+    _databaseService.addPayment(payment);
     _toController.text = initialText;
     _fromController.text = initialText;
 
-    Navigator.pop(context, {"transaction": transaction});
+    Navigator.of(context).pop(NewPaymentResults(payment: payment));
   }
 
   String text = "";
@@ -89,8 +84,13 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
               color: Theme.of(context).colorScheme.onPrimary,
             ),
             title: Text(
-              'Registrar Transação',
+              'Registrar Pagamento',
               style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+            ),
+            leading: BackButton(
+              onPressed: () {
+                Navigator.of(context).pop(NewPaymentResults(payment: null));
+              },
             ),
           ),
           body: Padding(
@@ -110,13 +110,16 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
                     onChanged: (text) {
                       setState(() {
                         toValue =
-                            (CurrencyInputFormatter.formatter.parse(text) * 100)
+                            (CurrencyInputFormatter.formatter.parse(
+                                      text == "" ? "0" : text,
+                                    ) *
+                                    100)
                                 .floor();
                       });
                     },
-                    onSubmitted: (_) => toValue == 0 && fromValue == 0
+                    onSubmitted: toValue == 0 && fromValue == 0
                         ? null
-                        : {_addTransaction()},
+                        : (_) => _addPayment(),
                     readOnly: fromValue != 0,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
@@ -125,23 +128,12 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
                     ),
                   ),
                 ),
-                IconButton(
-                  color: toValue == 0 && fromValue == 0
-                      ? Colors.grey
-                      : Theme.of(context).colorScheme.primary,
-                  constraints: BoxConstraints(),
-                  onPressed: toValue == 0 && fromValue == 0
-                      ? null
-                      : () => _addTransaction(),
-                  icon: Icon(
-                    toValue == 0 && fromValue == 0
-                        ? Icons.remove
-                        : toValue == 0
-                        ? Icons.arrow_back
-                        : Icons.arrow_forward,
-                  ),
-                  iconSize: 25,
-                  padding: EdgeInsets.zero,
+                Icon(
+                  toValue == 0 && fromValue == 0
+                      ? Icons.remove
+                      : toValue == 0
+                      ? Icons.arrow_back
+                      : Icons.arrow_forward,
                 ),
                 SizedBox(
                   width: MediaQuery.of(context).size.width / 2 - 75,
@@ -158,9 +150,9 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
                                 .floor();
                       });
                     },
-                    onSubmitted: (_) => toValue == 0 && fromValue == 0
+                    onSubmitted: toValue == 0 && fromValue == 0
                         ? null
-                        : _addTransaction(),
+                        : (_) => _addPayment(),
                     readOnly: toValue != 0,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
@@ -176,7 +168,9 @@ class _NewTransactionPageState extends State<NewTransactionPage> {
             style: IconButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
             ),
-            onPressed: text == "" ? null : () => _addTransaction(),
+            onPressed: toValue == 0 && fromValue == 0
+                ? null
+                : () => _addPayment(),
             icon: Icon(Icons.save),
             iconSize: 30,
             color: Theme.of(context).colorScheme.onPrimary,

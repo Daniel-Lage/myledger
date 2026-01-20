@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/models/contact_model.dart';
+import 'package:myledger/models/contact_model.dart';
 
 class MainContactComponent extends StatelessWidget {
   final ContactObject? contact;

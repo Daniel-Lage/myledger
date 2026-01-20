@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_project/notifiers/preferences_notifier.dart';
-import 'package:flutter_project/pages/home_page.dart';
-import 'package:flutter_project/pages/contact_page.dart';
-import 'package:flutter_project/pages/new_contact_page.dart';
-import 'package:flutter_project/pages/new_transaction_page.dart';
-import 'package:flutter_project/pages/settings_page.dart';
+import 'package:myledger/notifiers/preferences_notifier.dart';
+import 'package:myledger/pages/home_page.dart';
+import 'package:myledger/pages/contact_page.dart';
+import 'package:myledger/pages/new_contact_page.dart';
+import 'package:myledger/pages/new_payment_page.dart';
+import 'package:myledger/pages/preferences_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:provider/provider.dart';
 
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Flutter Project',
+    title: 'MyLedger',
     theme: ThemeData(
       colorScheme: ColorScheme(
         primary: Provider.of<PreferenceNotifier>(context).isDarkTheme
@@ -61,9 +61,9 @@ class MyApp extends StatelessWidget {
     routes: {
       '/': (context) => HomePage(),
       '/contact': (context) => ContactPage(),
-      '/settings': (context) => SettingsPage(),
+      '/preferences': (context) => PreferencesPage(),
       '/new_contact': (context) => NewContactPage(),
-      '/new_transaction': (context) => NewTransactionPage(),
+      '/new_payment': (context) => NewPaymentPage(),
     },
   );
 }

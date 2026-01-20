@@ -14,3 +14,22 @@ class ContactCompareFunction {
 enum ContactCompareKey { name, debt }
 
 enum ContactPageAction { none, update, delete }
+
+class ContactArguments {
+  final ContactObject contact;
+
+  ContactArguments({required this.contact});
+}
+
+class ContactResults {
+  final ContactObject contact;
+  final ContactPageAction action;
+
+  ContactResults({required this.contact, required this.action});
+}
+
+class NewContactResults {
+  final ContactObject contact;
+
+  NewContactResults({required this.contact});
+}

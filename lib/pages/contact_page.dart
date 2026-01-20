@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_project/components/transaction_component.dart';
-import 'package:flutter_project/currency_input_formatter.dart';
-import 'package:flutter_project/models/contact_model.dart';
-import 'package:flutter_project/models/transaction_model.dart';
-import 'package:flutter_project/services/database_service.dart';
+import 'package:myledger/components/payment_component.dart';
+import 'package:myledger/currency_input_formatter.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/services/database_service.dart';
 
 class ContactPage extends StatefulWidget {
   const ContactPage({super.key});
@@ -17,7 +17,7 @@ class _ContactPageState extends State<ContactPage> {
   bool _updated = false;
   final String initialText = CurrencyInputFormatter.formatter.format(0);
   ContactObject? _contact;
-  List<TransactionObject> _transactionsList = <TransactionObject>[];
+  List<PaymentObject> _paymentsList = <PaymentObject>[];
   final DatabaseService _databaseService = DatabaseService.instance;
 
   int toValue = 0;
@@ -27,54 +27,44 @@ class _ContactPageState extends State<ContactPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Object? args = ModalRoute.of(context)?.settings.arguments;
-
-      if (args == null) return;
-
-      Map<String, Object> argsMap = args as Map<String, Object>;
-
-      ContactObject selectedContact = argsMap["contact"] as ContactObject;
+      ContactArguments args =
+          ModalRoute.of(context)?.settings.arguments as ContactArguments;
 
       setState(() {
-        _contact = selectedContact;
+        _contact = args.contact;
       });
       loadState();
     });
   }
 
   Future<void> loadState() async {
-    final transactionsTable = await _databaseService.getContactsTransactions(
+    final paymentsTable = await _databaseService.getContactsPayments(
       _contact!.name,
     );
 
     setState(() {
-      _transactionsList = transactionsTable;
+      _paymentsList = paymentsTable;
     });
   }
 
-  Future<void> _goToNewTransaction() async {
-    Object? args = await Navigator.of(
-      context,
-    ).pushNamed("/new_transaction", arguments: {"contact": _contact!});
+  Future<void> _goToNewPayment() async {
+    NewPaymentResults args =
+        await Navigator.of(context).pushNamed(
+              "/new_payment",
+              arguments: NewPaymentArguments(contact: _contact!),
+            )
+            as NewPaymentResults;
 
-    if (args == null) return;
-
-    Map<String, Object> argsMap = args as Map<String, Object>;
-
-    final newTransaction = argsMap["transaction"] as TransactionObject;
+    if (args.payment == null) return;
 
     setState(() {
-      _transactionsList.add(newTransaction);
+      _paymentsList.add(args.payment!);
       _updated = true;
     });
   }
 
   void _removeContact(String name) {
     _databaseService.removeContact(name);
-    Navigator.pop(context, {
-      "contact": _contact!,
-      "action": ContactPageAction.delete,
-    });
   }
 
   Future<void> _removeContactDialogBuilder(BuildContext context, String name) =>
@@ -87,10 +77,13 @@ class _ContactPageState extends State<ContactPage> {
             IconButton(
               onPressed: () {
                 _removeContact(name);
-                Navigator.pop(context, {
-                  "contact": _contact!,
-                  "action": ContactPageAction.delete,
-                });
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(
+                  ContactResults(
+                    contact: _contact!,
+                    action: ContactPageAction.delete,
+                  ),
+                );
               },
               icon: Icon(Icons.remove),
               style: IconButton.styleFrom(backgroundColor: Colors.red),
@@ -148,12 +141,14 @@ class _ContactPageState extends State<ContactPage> {
 
             leading: BackButton(
               onPressed: () {
-                Navigator.pop(context, {
-                  "contact": _contact!,
-                  "action": _updated
-                      ? ContactPageAction.update
-                      : ContactPageAction.none,
-                });
+                Navigator.of(context).pop(
+                  ContactResults(
+                    contact: _contact!,
+                    action: _updated
+                        ? ContactPageAction.update
+                        : ContactPageAction.none,
+                  ),
+                );
               },
             ),
           ),
@@ -187,9 +182,8 @@ class _ContactPageState extends State<ContactPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20),
                 ),
-                ..._transactionsList.map(
-                  (transaction) =>
-                      TransactionComponent(transaction: transaction),
+                ..._paymentsList.map(
+                  (payment) => PaymentComponent(payment: payment),
                 ),
 
                 Row(
@@ -216,7 +210,7 @@ class _ContactPageState extends State<ContactPage> {
             style: IconButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
             ),
-            onPressed: _goToNewTransaction,
+            onPressed: _goToNewPayment,
             icon: Icon(Icons.add),
             iconSize: 40,
             color: Theme.of(context).colorScheme.onPrimary,

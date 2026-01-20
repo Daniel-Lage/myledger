@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/models/contact_model.dart';
-import 'package:flutter_project/services/database_service.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/services/database_service.dart';
 
 class NewContactPage extends StatefulWidget {
   const NewContactPage({super.key});
@@ -18,7 +18,7 @@ class _NewContactPageState extends State<NewContactPage> {
   void _addContact() {
     final contact = ContactObject(name: text);
     _databaseService.addContact(contact);
-    Navigator.pop(context, {"contact": contact});
+    Navigator.of(context).pop(NewContactResults(contact: contact));
   }
 
   @override

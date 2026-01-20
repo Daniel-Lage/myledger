@@ -1,5 +1,5 @@
-import 'package:flutter_project/models/contact_model.dart';
-import 'package:flutter_project/models/transaction_model.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/models/payment_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -11,11 +11,11 @@ class DatabaseService {
   final String _contactsNameColumnName = "name";
   final String _contactsDebtColumnName = "debt";
 
-  final String _transactionsTableName = "transactions";
-  final String _transactionsContactNameColumnName = "contactName";
-  final String _transactionsIdColumnName = "id";
-  final String _transactionsValueColumnName = "value";
-  final String _transactionsTypeColumnName = "type";
+  final String _paymentsTableName = "payments";
+  final String _paymentsContactNameColumnName = "contactName";
+  final String _paymentsIdColumnName = "id";
+  final String _paymentsValueColumnName = "value";
+  final String _paymentsTypeColumnName = "type";
 
   static Database? _database;
 
@@ -25,23 +25,37 @@ class DatabaseService {
     return _database!;
   }
 
-  Future<Database> _initDatabase() async => await openDatabase(
-    join(await getDatabasesPath(), 'main.db'),
-    version: 1,
-    onCreate: (db, version) {
-      db.execute('''CREATE TABLE $_contactsTableName (
+  Future<Database> _initDatabase() async {
+    String databasesPath = await getDatabasesPath();
+    final path = join(databasesPath, 'main.db');
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: (db, version) async {
+        db.execute('''CREATE TABLE $_contactsTableName (
         $_contactsNameColumnName TEXT PRIMARY KEY,
         $_contactsDebtColumnName INTEGER NOT NULL
       )''');
-      db.execute('''CREATE TABLE $_transactionsTableName (
-        $_transactionsIdColumnName INTEGER NOT NULL AUTO_INCREMENT,
-        $_transactionsContactNameColumnName TEXT,
-        $_transactionsValueColumnName INTEGER,
-        $_transactionsTypeColumnName INTEGER,
-        PRIMARY KEY ($_transactionsIdColumnName)
+        db.execute('''CREATE TABLE $_paymentsTableName (
+        $_paymentsIdColumnName INTEGER PRIMARY KEY,
+        $_paymentsContactNameColumnName TEXT,
+        $_paymentsValueColumnName INTEGER,
+        $_paymentsTypeColumnName INTEGER
       )''');
-    },
-  );
+      },
+    );
+  }
+
+  Future<void> resetDatabase() async {
+    String databasesPath = await getDatabasesPath();
+    final path = join(databasesPath, 'main.db');
+
+    final db = await database;
+    await db.close();
+
+    await deleteDatabase(path);
+    _database = await _initDatabase();
+  }
 
   Future<void> addContact(ContactObject contact) async {
     final db = await database;
@@ -77,8 +91,8 @@ class DatabaseService {
       );
 
       await db.delete(
-        _transactionsTableName,
-        where: '$_transactionsContactNameColumnName = ?',
+        _paymentsTableName,
+        where: '$_paymentsContactNameColumnName = ?',
         whereArgs: [name],
       );
     }
@@ -107,54 +121,48 @@ class DatabaseService {
     );
   }
 
-  Future<List<TransactionObject>> getTransactionsTable() async {
+  Future<List<PaymentObject>> getPaymentsTable() async {
     final db = await database;
-    final transactionsTable = await db.query(_transactionsTableName);
-    return transactionsTable
+    final paymentsTable = await db.query(_paymentsTableName);
+    return paymentsTable
         .map(
-          (transactionMap) => TransactionObject(
-            contactName:
-                transactionMap[_transactionsContactNameColumnName] as String,
-            value: transactionMap[_transactionsValueColumnName] as int,
-            type: transactionMap[_transactionsTypeColumnName] == 1
-                ? TransactionType.minus
-                : TransactionType.plus,
+          (paymentMap) => PaymentObject(
+            contactName: paymentMap[_paymentsContactNameColumnName] as String,
+            value: paymentMap[_paymentsValueColumnName] as int,
+            type: paymentMap[_paymentsTypeColumnName] == 1
+                ? PaymentType.minus
+                : PaymentType.plus,
           ),
         )
         .toList();
   }
 
-  Future<List<TransactionObject>> getContactsTransactions(
-    String contactName,
-  ) async {
+  Future<List<PaymentObject>> getContactsPayments(String contactName) async {
     final db = await database;
-    final transactionsTable = await db.query(
-      _transactionsTableName,
-      where: '$_transactionsContactNameColumnName = ?',
+    final paymentsTable = await db.query(
+      _paymentsTableName,
+      where: '$_paymentsContactNameColumnName = ?',
       whereArgs: [contactName],
     );
-    return transactionsTable
+    return paymentsTable
         .map(
-          (transactionMap) => TransactionObject(
-            contactName:
-                transactionMap[_transactionsContactNameColumnName] as String,
-            value: transactionMap[_transactionsValueColumnName] as int,
-            type: transactionMap[_transactionsTypeColumnName] == 1
-                ? TransactionType.minus
-                : TransactionType.plus,
+          (paymentMap) => PaymentObject(
+            contactName: paymentMap[_paymentsContactNameColumnName] as String,
+            value: paymentMap[_paymentsValueColumnName] as int,
+            type: paymentMap[_paymentsTypeColumnName] == 1
+                ? PaymentType.minus
+                : PaymentType.plus,
           ),
         )
         .toList();
   }
 
-  Future<void> addTransaction(TransactionObject transaction) async {
+  Future<void> addPayment(PaymentObject payment) async {
     final db = await database;
-    await db.insert(_transactionsTableName, {
-      _transactionsContactNameColumnName: transaction.contactName,
-      _transactionsValueColumnName: transaction.value,
-      _transactionsTypeColumnName: transaction.type == TransactionType.minus
-          ? 1
-          : 0,
+    await db.insert(_paymentsTableName, {
+      _paymentsContactNameColumnName: payment.contactName,
+      _paymentsValueColumnName: payment.value,
+      _paymentsTypeColumnName: payment.type == PaymentType.minus ? 1 : 0,
     });
   }
 }

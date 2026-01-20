@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_project/models/contact_model.dart';
-import 'package:flutter_project/currency_input_formatter.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/currency_input_formatter.dart';
 
 class ContactComponent extends StatelessWidget {
   final ContactObject contact;

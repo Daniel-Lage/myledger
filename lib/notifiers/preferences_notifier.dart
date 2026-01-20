@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myledger/models/preferences_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferenceNotifier with ChangeNotifier {
@@ -43,9 +44,4 @@ class PreferenceNotifier with ChangeNotifier {
     _savePrefs();
     notifyListeners();
   }
-}
-
-class Preferences {
-  bool isDarkTheme = false;
-  bool isUsingLocalContacts = false;
 }
