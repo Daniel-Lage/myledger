@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:myledger/models/contact_model.dart';
-import 'package:myledger/services/database_service.dart';
 
 class NewContactPage extends StatefulWidget {
   const NewContactPage({super.key});
@@ -11,24 +10,25 @@ class NewContactPage extends StatefulWidget {
 
 class _NewContactPageState extends State<NewContactPage> {
   final TextEditingController _controller = TextEditingController();
-  final DatabaseService _databaseService = DatabaseService.instance;
 
   String text = "";
 
   void _addContact() {
     final contact = ContactObject(name: text);
-    _databaseService.addContact(contact);
-    Navigator.of(context).pop(NewContactResults(contact: contact));
+    Navigator.of(context).pop(NewContactResult(contact: contact));
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+      backgroundColor: ColorScheme.of(context).primary,
+      iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
       title: Text(
         'Criar Contato',
-        style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: ColorScheme.of(context).onPrimary,
+        ),
       ),
     ),
     body: Padding(
@@ -61,12 +61,12 @@ class _NewContactPageState extends State<NewContactPage> {
     ),
     floatingActionButton: IconButton(
       style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: ColorScheme.of(context).primary,
       ),
       onPressed: text == "" ? null : () => _addContact(),
       icon: Icon(Icons.save),
       iconSize: 30,
-      color: Theme.of(context).colorScheme.onPrimary,
+      color: ColorScheme.of(context).onPrimary,
       padding: EdgeInsetsGeometry.all(15),
     ),
   );

@@ -18,6 +18,7 @@ class PreferencesPage extends StatefulWidget {
 class _PreferencesPageState extends State<PreferencesPage> {
   PreferenceNotifier? _preferences;
   final PreferencePageActions _actions = PreferencePageActions();
+  final DatabaseService _databaseService = DatabaseService.instance;
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
     _actions.updatedIsUsingLocalContacts = true;
     if (await FlutterContacts.requestPermission()) {
       for (var localContact in (await FlutterContacts.getContacts())) {
-        await DatabaseService.instance.addContact(
+        await _databaseService.addContact(
           ContactObject(name: localContact.displayName),
         );
       }
@@ -44,14 +45,14 @@ class _PreferencesPageState extends State<PreferencesPage> {
     _actions.updatedIsUsingLocalContacts = true;
     if (await FlutterContacts.requestPermission()) {
       for (var localContact in (await FlutterContacts.getContacts())) {
-        await DatabaseService.instance.removeContact(localContact.displayName);
+        await _databaseService.deleteContact(localContact.displayName);
       }
     }
   }
 
   Future<void> _eraseData() async {
     _actions.dataErased = true;
-    await DatabaseService.instance.resetDatabase();
+    await _databaseService.resetDatabase();
   }
 
   Future<void> _eraseDataDialogBuilder(BuildContext context) =>
@@ -75,11 +76,14 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
   Widget loading() => Scaffold(
     appBar: AppBar(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+      backgroundColor: ColorScheme.of(context).primary,
+      iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
       title: Text(
         'Preferências',
-        style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: ColorScheme.of(context).onPrimary,
+        ),
       ),
     ),
     body: ListView(
@@ -107,19 +111,18 @@ class _PreferencesPageState extends State<PreferencesPage> {
       ? loading()
       : Scaffold(
           appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            iconTheme: IconThemeData(
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
+            backgroundColor: ColorScheme.of(context).primary,
+            iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
             title: Text(
               'Preferências',
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: ColorScheme.of(context).onPrimary,
+              ),
             ),
             leading: BackButton(
               onPressed: () {
-                Navigator.of(
-                  context,
-                ).pop(PreferencesResults(actions: _actions));
+                Navigator.of(context).pop(PreferencesResult(actions: _actions));
               },
             ),
           ),

@@ -6,6 +6,7 @@ import 'package:myledger/pages/home_page.dart';
 import 'package:myledger/pages/contact_page.dart';
 import 'package:myledger/pages/new_contact_page.dart';
 import 'package:myledger/pages/new_payment_page.dart';
+import 'package:myledger/pages/payment_page.dart';
 import 'package:myledger/pages/preferences_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:provider/provider.dart';
@@ -29,23 +30,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
     title: 'MyLedger',
     theme: ThemeData(
       colorScheme: ColorScheme(
-        primary: Provider.of<PreferenceNotifier>(context).isDarkTheme
-            ? const Color(0xFF77992A)
-            : const Color(0xFFB8E555),
+        primary: Colors.green,
         onPrimary: Provider.of<PreferenceNotifier>(context).isDarkTheme
             ? Colors.white
             : Colors.black,
         secondary: Provider.of<PreferenceNotifier>(context).isDarkTheme
-            ? Colors.black
-            : Colors.white,
+            ? const Color.fromARGB(255, 30, 30, 30)
+            : const Color.fromARGB(255, 225, 225, 225),
         onSecondary: Provider.of<PreferenceNotifier>(context).isDarkTheme
-            ? Colors.white
-            : Colors.black,
+            ? const Color.fromARGB(255, 200, 200, 200)
+            : const Color.fromARGB(255, 55, 55, 55),
         error: Colors.red,
-        onError: Colors.black,
+        onError: Colors.white,
         surface: Provider.of<PreferenceNotifier>(context).isDarkTheme
             ? Colors.black
             : Colors.white,
@@ -64,6 +64,7 @@ class MyApp extends StatelessWidget {
       '/preferences': (context) => PreferencesPage(),
       '/new_contact': (context) => NewContactPage(),
       '/new_payment': (context) => NewPaymentPage(),
+      '/payment': (context) => PaymentPage(),
     },
   );
 }

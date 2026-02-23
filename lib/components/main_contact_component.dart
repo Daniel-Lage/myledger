@@ -11,9 +11,9 @@ class MainContactComponent extends StatelessWidget {
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary,
+        color: ColorScheme.of(context).secondary,
         border: BoxBorder.all(
-          color: Theme.of(context).colorScheme.onSecondary,
+          color: ColorScheme.of(context).onSecondary,
           width: 2,
         ),
       ),
@@ -31,7 +31,8 @@ class MainContactComponent extends StatelessWidget {
                   : Text(
                       contact!.name,
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSecondary,
+                        fontWeight: FontWeight.w600,
+                        color: ColorScheme.of(context).onSecondary,
                         fontSize: 20,
                       ),
                     ),

@@ -1,17 +1,19 @@
 class ContactObject {
   final String name;
-  int debt;
-  ContactObject({required this.name, this.debt = 0});
+  int balance;
+  final DateTime? createdAt;
 
-  Map<String, Object> toMap() => {'name': name, "debt": debt};
+  ContactObject({required this.name, this.balance = 0, this.createdAt});
+
+  Map<String, Object> toMap() => {'name': name, "balance": balance};
 }
 
 class ContactCompareFunction {
   static name(ContactObject contact) => contact.name;
-  static debt(ContactObject contact) => contact.debt;
+  static balance(ContactObject contact) => contact.balance;
 }
 
-enum ContactCompareKey { name, debt }
+enum ContactCompareKey { name, balance }
 
 enum ContactPageAction { none, update, delete }
 
@@ -21,15 +23,15 @@ class ContactArguments {
   ContactArguments({required this.contact});
 }
 
-class ContactResults {
+class ContactResult {
   final ContactObject contact;
   final ContactPageAction action;
 
-  ContactResults({required this.contact, required this.action});
+  ContactResult({required this.contact, required this.action});
 }
 
-class NewContactResults {
-  final ContactObject contact;
+class NewContactResult {
+  final ContactObject? contact;
 
-  NewContactResults({required this.contact});
+  NewContactResult({required this.contact});
 }

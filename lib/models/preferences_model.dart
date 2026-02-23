@@ -8,8 +8,8 @@ class PreferencePageActions {
   bool dataErased = false;
 }
 
-class PreferencesResults {
+class PreferencesResult {
   final PreferencePageActions actions;
 
-  PreferencesResults({required this.actions});
+  PreferencesResult({required this.actions});
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:myledger/components/payment_component.dart';
-import 'package:myledger/currency_input_formatter.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
 import 'package:myledger/services/database_service.dart';
@@ -15,13 +14,12 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   bool _updated = false;
-  final String initialText = CurrencyInputFormatter.formatter.format(0);
   ContactObject? _contact;
   List<PaymentObject> _paymentsList = <PaymentObject>[];
   final DatabaseService _databaseService = DatabaseService.instance;
 
-  int toValue = 0;
-  int fromValue = 0;
+  int sendingValue = 0;
+  int receivingValue = 0;
 
   @override
   void initState() {
@@ -48,45 +46,100 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   Future<void> _goToNewPayment() async {
-    NewPaymentResults args =
+    NewPaymentResult result =
         await Navigator.of(context).pushNamed(
               "/new_payment",
               arguments: NewPaymentArguments(contact: _contact!),
             )
-            as NewPaymentResults;
+            as NewPaymentResult;
 
-    if (args.payment == null) return;
+    if (result.payment == null) return; // null if payment creation is cancelled
+
+    final newPayment = result.payment!;
+
+    final value = newPayment.type == PaymentType.receiving
+        ? newPayment.value
+        : -newPayment.value;
+
+    newPayment.id = await _databaseService.addPayment(newPayment);
 
     setState(() {
-      _paymentsList.add(args.payment!);
+      _contact!.balance += value;
+      _databaseService.updateContact(_contact!);
+      _paymentsList.add(newPayment);
       _updated = true;
     });
   }
 
-  void _removeContact(String name) {
-    _databaseService.removeContact(name);
+  Future<void> _goToPayment(PaymentObject payment) async {
+    PaymentResult result =
+        await Navigator.of(context).pushNamed(
+              "/payment",
+              arguments: PaymentArguments(payment: payment, contact: _contact!),
+            )
+            as PaymentResult;
+
+    if (result.action != PaymentPageAction.delete) return;
+
+    await _databaseService.deletePayment(payment);
+
+    final value = payment.type == PaymentType.receiving
+        ? payment.value
+        : -payment.value;
+
+    setState(() {
+      _contact!.balance -= value;
+      _databaseService.updateContact(_contact!);
+      _paymentsList.removeWhere((p) => p.id == payment.id);
+      _updated = true;
+    });
   }
 
-  Future<void> _removeContactDialogBuilder(BuildContext context, String name) =>
+  Future<void> _deleteContactDialogBuilder(BuildContext context) =>
       showDialog<void>(
         context: context,
         builder: (BuildContext context) => AlertDialog(
+          backgroundColor: ColorScheme.of(context).secondary,
           title: Text("Excluir contato?"),
-          content: Text("As transações armazenadas também serão perdidas."),
+          content: Text("Os pagamentos armazenadas também serão perdidas."),
           actions: [
-            IconButton(
-              onPressed: () {
-                _removeContact(name);
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: ColorScheme.of(context).primary,
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                ),
+                child: Text(
+                  "Cancelar",
+                  style: TextStyle(color: ColorScheme.of(context).onPrimary),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop(
-                  ContactResults(
+                  ContactResult(
                     contact: _contact!,
                     action: ContactPageAction.delete,
                   ),
                 );
               },
-              icon: Icon(Icons.remove),
-              style: IconButton.styleFrom(backgroundColor: Colors.red),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: ColorScheme.of(context).error,
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                ),
+                child: Text(
+                  "Excluir",
+                  style: TextStyle(color: ColorScheme.of(context).onError),
+                ),
+              ),
             ),
           ],
         ),
@@ -94,8 +147,8 @@ class _ContactPageState extends State<ContactPage> {
 
   Widget loading() => Scaffold(
     appBar: AppBar(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+      backgroundColor: ColorScheme.of(context).primary,
+      iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
     ),
     body: Center(
       child: ListView(
@@ -128,100 +181,151 @@ class _ContactPageState extends State<ContactPage> {
   @override
   Widget build(BuildContext context) => _contact == null
       ? loading()
-      : Scaffold(
-          appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            title: Text(
-              "Contato",
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-            ),
-            iconTheme: IconThemeData(
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
-
-            leading: BackButton(
-              onPressed: () {
-                Navigator.of(context).pop(
-                  ContactResults(
-                    contact: _contact!,
-                    action: _updated
-                        ? ContactPageAction.update
-                        : ContactPageAction.none,
-                  ),
-                );
-              },
-            ),
-          ),
-          body: Center(
-            child: ListView(
-              children: <Widget>[
-                Container(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).colorScheme.onSecondary,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.person, size: 100),
-
-                      Text(
-                        formatDebt(_contact!.debt, _contact!.name),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    ],
-                  ),
+      : PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            if (result == null) {
+              Navigator.of(context).pop(
+                ContactResult(
+                  contact: _contact!,
+                  action: _updated
+                      ? ContactPageAction.update
+                      : ContactPageAction.none,
                 ),
-
-                Text(
-                  'Transações',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20),
+              );
+            } else {
+              Navigator.of(context).pop(result);
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              backgroundColor: ColorScheme.of(context).primary,
+              title: Text(
+                "Contato",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: ColorScheme.of(context).onPrimary,
                 ),
-                ..._paymentsList.map(
-                  (payment) => PaymentComponent(payment: payment),
-                ),
+              ),
+              iconTheme: IconThemeData(
+                color: ColorScheme.of(context).onPrimary,
+              ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.only(top: 10),
-                      width: MediaQuery.of(context).size.width - 100,
-                      height: 50,
-                      child: TextButton(
-                        onPressed: () => _removeContactDialogBuilder(
-                          context,
-                          _contact!.name,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: IconButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            ListTile(
+                              leading: Icon(Icons.delete),
+                              title: Text("Excluir contato"),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                _deleteContactDialogBuilder(context);
+                              },
+                            ),
+                          ],
                         ),
-                        child: Text("Excluir Contato"),
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                    icon: Icon(Icons.more_vert),
+                  ),
                 ),
               ],
+
+              leading: BackButton(
+                onPressed: () {
+                  Navigator.of(context).pop(
+                    ContactResult(
+                      contact: _contact!,
+                      action: _updated
+                          ? ContactPageAction.update
+                          : ContactPageAction.none,
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-          floatingActionButton: IconButton(
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
+            body: Center(
+              child: ListView(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20, left: 10),
+                    child: Text(
+                      "Saldo com ${_contact!.name}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                        color: ColorScheme.of(context).onSecondary,
+                      ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Row(
+                      spacing: _contact!.balance >= 0 ? 0 : 3,
+                      children: [
+                        Text(
+                          _contact!.balance >= 0 ? "+" : "-",
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          PaymentObject.currencyFormat.format(
+                            _contact!.balance.abs() / 100,
+                          ),
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20, left: 10),
+                    child: Text(
+                      "Histórico",
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+
+                  ..._paymentsList.map(
+                    (payment) => PaymentComponent(
+                      payment: payment,
+                      onTap: () => _goToPayment(payment),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            onPressed: _goToNewPayment,
-            icon: Icon(Icons.add),
-            iconSize: 40,
-            color: Theme.of(context).colorScheme.onPrimary,
-            padding: EdgeInsetsGeometry.all(10),
+            floatingActionButton: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: ColorScheme.of(context).primary,
+              ),
+              onPressed: _goToNewPayment,
+              icon: Icon(Icons.add),
+              iconSize: 40,
+              color: ColorScheme.of(context).onPrimary,
+              padding: EdgeInsetsGeometry.all(10),
+            ),
           ),
         );
-}
-
-String formatDebt(int debt, String name) {
-  String debtString = CurrencyInputFormatter.formatter.format(debt.abs() / 100);
-  if (debt > 0) return "$name te deve $debtString";
-  if (debt < 0) return "Você deve $debtString a $name";
-  return "Você não tem divida com $name";
 }

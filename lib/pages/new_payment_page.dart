@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:myledger/currency_input_formatter.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
-import 'package:myledger/services/database_service.dart';
 
 class NewPaymentPage extends StatefulWidget {
   const NewPaymentPage({super.key});
@@ -13,17 +12,17 @@ class NewPaymentPage extends StatefulWidget {
 }
 
 class _NewPaymentPageState extends State<NewPaymentPage> {
-  final DatabaseService _databaseService = DatabaseService.instance;
-
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   final String initialText = CurrencyInputFormatter.formatter.format(0);
 
   ContactObject? _contact;
 
-  int toValue = 0;
-  int fromValue = 0;
+  int sendingValue = 0;
+  int receivingValue = 0;
+  int descriptionValue = 0;
 
   @override
   void initState() {
@@ -40,37 +39,36 @@ class _NewPaymentPageState extends State<NewPaymentPage> {
     });
   }
 
-  void _addPayment() {
+  Future<void> _addPayment() async {
     if (_contact == null) return;
 
-    final value = toValue == 0 ? fromValue : -toValue;
+    final value = sendingValue == 0 ? receivingValue : -sendingValue;
 
     final payment = PaymentObject(
       contactName: _contact!.name,
       value: value.abs(),
-      type: toValue == 0 ? PaymentType.plus : PaymentType.minus,
+      type: sendingValue == 0 ? PaymentType.receiving : PaymentType.sending,
+      createdAt: DateTime.now(),
+      description: _descriptionController.text,
     );
 
     setState(() {
-      _contact?.debt -= value;
-      toValue = 0;
-      fromValue = 0;
+      sendingValue = 0;
+      receivingValue = 0;
     });
 
-    _databaseService.updateContact(_contact!);
-    _databaseService.addPayment(payment);
     _toController.text = initialText;
     _fromController.text = initialText;
 
-    Navigator.of(context).pop(NewPaymentResults(payment: payment));
+    Navigator.of(context).pop(NewPaymentResult(payment: payment));
   }
 
   String text = "";
 
   Widget loading() => Scaffold(
     appBar: AppBar(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+      backgroundColor: ColorScheme.of(context).primary,
+      iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
     ),
   );
 
@@ -79,85 +77,108 @@ class _NewPaymentPageState extends State<NewPaymentPage> {
       ? loading()
       : Scaffold(
           appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            iconTheme: IconThemeData(
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
+            backgroundColor: ColorScheme.of(context).primary,
+            iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
             title: Text(
               'Registrar Pagamento',
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: ColorScheme.of(context).onPrimary,
+              ),
             ),
             leading: BackButton(
               onPressed: () {
-                Navigator.of(context).pop(NewPaymentResults(payment: null));
+                Navigator.of(context).pop(NewPaymentResult(payment: null));
               },
             ),
           ),
           body: Padding(
             padding: EdgeInsetsGeometry.symmetric(vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              spacing: 10,
-              children: <Widget>[
-                SizedBox(
-                  width: MediaQuery.of(context).size.width / 2 - 75,
-                  child: TextField(
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      CurrencyInputFormatter(),
-                    ],
-                    controller: _toController,
-                    onChanged: (text) {
-                      setState(() {
-                        toValue =
-                            (CurrencyInputFormatter.formatter.parse(
-                                      text == "" ? "0" : text,
-                                    ) *
-                                    100)
-                                .floor();
-                      });
-                    },
-                    onSubmitted: toValue == 0 && fromValue == 0
-                        ? null
-                        : (_) => _addPayment(),
-                    readOnly: fromValue != 0,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Você',
+
+            child: Column(
+              spacing: 20,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  spacing: 10,
+                  children: <Widget>[
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width / 2 - 75,
+                      child: TextField(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          CurrencyInputFormatter(),
+                        ],
+                        controller: _toController,
+                        onChanged: (text) {
+                          setState(() {
+                            sendingValue =
+                                (CurrencyInputFormatter.formatter.parse(
+                                          text == "" ? "0" : text,
+                                        ) *
+                                        100)
+                                    .floor();
+                          });
+                        },
+                        onSubmitted: sendingValue == 0 && receivingValue == 0
+                            ? null
+                            : (_) => _addPayment(),
+                        readOnly: receivingValue != 0,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Você',
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Icon(
-                  toValue == 0 && fromValue == 0
-                      ? Icons.remove
-                      : toValue == 0
-                      ? Icons.arrow_back
-                      : Icons.arrow_forward,
+                    Icon(
+                      sendingValue == 0 && receivingValue == 0
+                          ? Icons.remove
+                          : sendingValue == 0
+                          ? Icons.arrow_back
+                          : Icons.arrow_forward,
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width / 2 - 75,
+                      child: TextField(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          CurrencyInputFormatter(),
+                        ],
+                        controller: _fromController,
+                        onChanged: (text) {
+                          setState(() {
+                            receivingValue =
+                                (CurrencyInputFormatter.formatter.parse(text) *
+                                        100)
+                                    .floor();
+                          });
+                        },
+                        onSubmitted: sendingValue == 0 && receivingValue == 0
+                            ? null
+                            : (_) => _addPayment(),
+                        readOnly: sendingValue != 0,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: _contact!.name,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(
-                  width: MediaQuery.of(context).size.width / 2 - 75,
+                  width: MediaQuery.of(context).size.width - 105,
+
                   child: TextField(
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      CurrencyInputFormatter(),
-                    ],
-                    controller: _fromController,
-                    onChanged: (text) {
-                      setState(() {
-                        fromValue =
-                            (CurrencyInputFormatter.formatter.parse(text) * 100)
-                                .floor();
-                      });
-                    },
-                    onSubmitted: toValue == 0 && fromValue == 0
+                    controller: _descriptionController,
+                    onSubmitted: sendingValue == 0 && receivingValue == 0
                         ? null
                         : (_) => _addPayment(),
-                    readOnly: toValue != 0,
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.text,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: _contact!.name,
+                      labelText: 'Descrição (opcional)',
                     ),
                   ),
                 ),
@@ -166,14 +187,14 @@ class _NewPaymentPageState extends State<NewPaymentPage> {
           ),
           floatingActionButton: IconButton(
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: ColorScheme.of(context).primary,
             ),
-            onPressed: toValue == 0 && fromValue == 0
+            onPressed: sendingValue == 0 && receivingValue == 0
                 ? null
                 : () => _addPayment(),
             icon: Icon(Icons.save),
             iconSize: 30,
-            color: Theme.of(context).colorScheme.onPrimary,
+            color: ColorScheme.of(context).onPrimary,
             padding: EdgeInsetsGeometry.all(15),
           ),
         );

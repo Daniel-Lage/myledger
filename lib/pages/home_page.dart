@@ -13,7 +13,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<ContactObject> _contactList = <ContactObject>[];
-  ContactCompareKey _compareKey = ContactCompareKey.debt;
+  ContactCompareKey _compareKey = ContactCompareKey.balance;
   bool _listIsReversed = false;
 
   final DatabaseService _databaseService = DatabaseService.instance;
@@ -31,25 +31,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _goToNewContact() async {
-    NewContactResults args =
+    NewContactResult result =
         await Navigator.of(context).pushNamed("/new_contact")
-            as NewContactResults;
+            as NewContactResult;
+
+    if (result.contact == null) return; // null if contact creation is cancelled
+
+    final newContact = result.contact!;
+
+    _databaseService.addContact(newContact);
+
     setState(() {
-      _contactList.add(args.contact);
+      _contactList.add(newContact);
     });
   }
 
   Future<void> _goToContact(ContactObject contact) async {
-    ContactResults args =
+    ContactResult result =
         await Navigator.of(context).pushNamed(
               '/contact',
               arguments: ContactArguments(contact: contact),
             )
-            as ContactResults;
+            as ContactResult;
 
-    switch (args.action) {
+    switch (result.action) {
       case ContactPageAction.update:
-        final updatedContact = args.contact;
+        final updatedContact = result.contact;
 
         final index = _contactList.indexWhere(
           (contact) => contact.name == updatedContact.name,
@@ -60,11 +67,13 @@ class _HomePageState extends State<HomePage> {
         });
         break;
       case ContactPageAction.delete:
-        final updatedContact = args.contact;
+        final deletedContact = result.contact;
 
         final index = _contactList.indexWhere(
-          (contact) => contact.name == updatedContact.name,
+          (contact) => contact.name == deletedContact.name,
         );
+
+        _databaseService.deleteContact(deletedContact.name);
 
         setState(() {
           _contactList.removeAt(index);
@@ -76,20 +85,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _goToPrefs() async {
-    PreferencesResults args =
+    PreferencesResult result =
         await Navigator.of(context).pushNamed("/preferences")
-            as PreferencesResults;
+            as PreferencesResult;
 
-    if (args.actions.updatedIsUsingLocalContacts == true ||
-        args.actions.dataErased == true) {
+    if (result.actions.updatedIsUsingLocalContacts == true ||
+        result.actions.dataErased == true) {
       loadState();
     }
   }
 
   List<ContactObject> _getSortedContacts() {
     switch (_compareKey) {
-      case ContactCompareKey.debt:
-        _contactList.sort((a, b) => b.debt.abs().compareTo(a.debt.abs()));
+      case ContactCompareKey.balance:
+        _contactList.sort((a, b) => b.balance.abs().compareTo(a.balance.abs()));
         break;
       case ContactCompareKey.name:
         _contactList.sort((a, b) => a.name.compareTo(b.name));
@@ -102,14 +111,17 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: ColorScheme.of(context).primary,
         iconTheme: IconThemeData(
-          color: Theme.of(context).colorScheme.onPrimary,
+          color: ColorScheme.of(context).onPrimary,
           size: 35,
         ),
         title: Text(
           'Início',
-          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: ColorScheme.of(context).onPrimary,
+          ),
         ),
         leading: IconButton(
           onPressed: _goToPrefs,
@@ -120,102 +132,85 @@ class _HomePageState extends State<HomePage> {
       body: ListView(
         children: [
           Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.onSecondary,
-                ),
-              ),
-            ),
-
-            padding: EdgeInsetsGeometry.directional(top: 10),
+            height: 50,
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(color: ColorScheme.of(context).secondary),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              spacing: 10,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                SizedBox(
-                  width: MediaQuery.of(context).size.width - 100,
-                  height: 50,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => setState(() {
-                              if (_compareKey == ContactCompareKey.name) {
-                                _listIsReversed = !_listIsReversed;
-                              } else {
-                                _compareKey = ContactCompareKey.name;
-                                _listIsReversed = false;
-                              }
-                            }),
-                            child: Text(
-                              "Nome",
-                              style: _compareKey == ContactCompareKey.name
-                                  ? TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondary,
-                                      fontWeight: FontWeight.bold,
-                                    )
-                                  : TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondary,
-                                    ),
-                            ),
-                          ),
-                          Icon(
-                            _listIsReversed
-                                ? Icons.keyboard_arrow_down
-                                : Icons.keyboard_arrow_up,
-                            color: _compareKey == ContactCompareKey.name
-                                ? Theme.of(context).colorScheme.onSecondary
-                                : Colors.transparent,
-                          ),
-                        ],
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {
+                        if (_compareKey == ContactCompareKey.name) {
+                          _listIsReversed = !_listIsReversed;
+                        } else {
+                          _compareKey = ContactCompareKey.name;
+                          _listIsReversed = false;
+                        }
+                      }),
+                      child: Text(
+                        "Nome",
+                        style: _compareKey == ContactCompareKey.name
+                            ? TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: ColorScheme.of(context).onPrimary,
+                              )
+                            : TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: ColorScheme.of(context).onSecondary,
+                              ),
                       ),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => setState(() {
-                              if (_compareKey == ContactCompareKey.debt) {
-                                _listIsReversed = !_listIsReversed;
-                              } else {
-                                _compareKey = ContactCompareKey.debt;
-                                _listIsReversed = false;
-                              }
-                            }),
-                            child: Text(
-                              "Dívida",
-                              style: _compareKey == ContactCompareKey.debt
-                                  ? TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondary,
-                                      fontWeight: FontWeight.bold,
-                                    )
-                                  : TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondary,
-                                    ),
-                            ),
-                          ),
-
-                          Icon(
-                            _listIsReversed
-                                ? Icons.keyboard_arrow_down
-                                : Icons.keyboard_arrow_up,
-                            color: _compareKey == ContactCompareKey.debt
-                                ? Theme.of(context).colorScheme.onSecondary
-                                : Colors.transparent,
-                          ),
-                        ],
+                    ),
+                    Icon(
+                      _listIsReversed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      color: _compareKey == ContactCompareKey.name
+                          ? ColorScheme.of(context).onSecondary
+                          : Colors.transparent,
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {
+                        if (_compareKey == ContactCompareKey.balance) {
+                          _listIsReversed = !_listIsReversed;
+                        } else {
+                          _compareKey = ContactCompareKey.balance;
+                          _listIsReversed = false;
+                        }
+                      }),
+                      child: Text(
+                        "Saldo",
+                        style: _compareKey == ContactCompareKey.balance
+                            ? TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: ColorScheme.of(context).onPrimary,
+                              )
+                            : TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: ColorScheme.of(context).onSecondary,
+                              ),
                       ),
-                    ],
-                  ),
+                    ),
+                    Icon(
+                      _listIsReversed
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_up,
+                      color: _compareKey == ContactCompareKey.balance
+                          ? ColorScheme.of(context).onSecondary
+                          : Colors.transparent,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -230,12 +225,12 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: IconButton(
         style: IconButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: ColorScheme.of(context).primary,
         ),
         onPressed: _goToNewContact,
         icon: Icon(Icons.add),
         iconSize: 40,
-        color: Theme.of(context).colorScheme.onPrimary,
+        color: ColorScheme.of(context).onPrimary,
         padding: EdgeInsetsGeometry.all(10),
       ),
     );
