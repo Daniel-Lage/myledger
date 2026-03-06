@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -59,3 +60,10 @@ jobs:
           body: "APK gerado automaticamente para a versão ${{ github.ref_name }}."
           draft: false
           prerelease: false
+
+      - name: Debug Info
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Ref name: ${{ github.ref_name }}"
+          echo "Has GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN != '' }}"
