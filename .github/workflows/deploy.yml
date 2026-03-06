@@ -1,0 +1,61 @@
+name: Build and Release Flutter APK
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build APK and Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Get Flutter Version
+        id: flutter_version
+        uses: bungabear/flutter_version_read@main
+        with:
+          file: ./pubspec.yaml
+
+      - name: Print Version
+        run: |
+          echo "Version Name: ${{ steps.flutter_version.outputs.version_number }}"
+          echo "Build Number: ${{ steps.flutter_version.outputs.build_number }}"
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          VERSION_NUMBER=${{ steps.flutter_version.outputs.version_number }}
+          BUILD_NUMBER=${{ steps.flutter_version.outputs.build_number }}
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app_name-v${VERSION_NUMBER}+${BUILD_NUMBER}.apk
+
+      - name: Create Release and Upload APK
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/flutter-apk/*.apk"
+          token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: "APK gerado automaticamente para a versão ${{ github.ref_name }}."
+          draft: false
+          prerelease: false
