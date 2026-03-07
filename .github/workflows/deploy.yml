@@ -2,8 +2,8 @@ name: Build and Release Flutter APK
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -38,19 +38,8 @@ jobs:
         with:
           file: ./pubspec.yaml
 
-      - name: Print Version
-        run: |
-          echo "Version Name: ${{ steps.flutter_version.outputs.version_number }}"
-          echo "Build Number: ${{ steps.flutter_version.outputs.build_number }}"
-
       - name: Build APK
         run: flutter build apk --release
-
-      - name: Rename APK
-        run: |
-          VERSION_NUMBER=${{ steps.flutter_version.outputs.version_number }}
-          BUILD_NUMBER=${{ steps.flutter_version.outputs.build_number }}
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app_name-v${VERSION_NUMBER}+${BUILD_NUMBER}.apk
 
       - name: Create Release and Upload APK
         uses: ncipollo/release-action@v1
@@ -62,10 +51,3 @@ jobs:
           body: "APK gerado automaticamente para a versão ${{ github.ref_name }}."
           draft: false
           prerelease: false
-
-      - name: Debug Info
-        run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Ref name: ${{ github.ref_name }}"
-          echo "Has GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN != '' }}"
