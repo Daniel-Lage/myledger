@@ -5,14 +5,14 @@ import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
 import 'package:myledger/services/database_service.dart';
 
-class ContactPage extends StatefulWidget {
-  const ContactPage({super.key});
+class ContactView extends StatefulWidget {
+  const ContactView({super.key});
 
   @override
-  State<ContactPage> createState() => _ContactPageState();
+  State<ContactView> createState() => _ContactViewState();
 }
 
-class _ContactPageState extends State<ContactPage> {
+class _ContactViewState extends State<ContactView> {
   ContactPageAction _action = ContactPageAction.none;
   ContactObject? _contact;
   List<PaymentObject> _paymentsList = <PaymentObject>[];

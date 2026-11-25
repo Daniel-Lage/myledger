@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:myledger/currency_input_formatter.dart';
+import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
 
-class EditPaymentPage extends StatefulWidget {
-  const EditPaymentPage({super.key});
+class NewPaymentView extends StatefulWidget {
+  const NewPaymentView({super.key});
 
   @override
-  State<EditPaymentPage> createState() => _EditPaymentPageState();
+  State<NewPaymentView> createState() => _NewPaymentViewState();
 }
 
-class _EditPaymentPageState extends State<EditPaymentPage> {
-  EditPaymentPageAction _action = EditPaymentPageAction.none;
-
+class _NewPaymentViewState extends State<NewPaymentView> {
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _fromController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
   final String initialText = CurrencyInputFormatter.formatter.format(0);
 
-  PaymentObject? _payment;
+  ContactObject? _contact;
 
   int sendingValue = 0;
   int receivingValue = 0;
+  int descriptionValue = 0;
 
   @override
   void initState() {
@@ -30,41 +30,25 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
     _toController.text = initialText;
     _fromController.text = initialText;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      EditPaymentArguments args =
-          ModalRoute.of(context)?.settings.arguments as EditPaymentArguments;
+      NewPaymentArguments args =
+          ModalRoute.of(context)?.settings.arguments as NewPaymentArguments;
 
       setState(() {
-        _payment = args.payment;
-
-        if (args.payment.type == PaymentType.sending) {
-          sendingValue = args.payment.value;
-          _toController.text = CurrencyInputFormatter.formatter.format(
-            args.payment.value / 100,
-          );
-        } else {
-          receivingValue = args.payment.value;
-
-          _fromController.text = CurrencyInputFormatter.formatter.format(
-            args.payment.value / 100,
-          );
-        }
-
-        if (args.payment.description != null) {
-          _descriptionController.text = args.payment.description!;
-        }
+        _contact = args.contact;
       });
     });
   }
 
-  Future<void> _editPayment() async {
+  Future<void> _addPayment() async {
+    if (_contact == null) return;
+
     final value = sendingValue == 0 ? receivingValue : -sendingValue;
 
     final payment = PaymentObject(
-      id: _payment!.id,
-      contactName: _payment!.contactName,
+      contactName: _contact!.name,
       value: value.abs(),
       type: sendingValue == 0 ? PaymentType.receiving : PaymentType.sending,
-      createdAt: _payment!.createdAt,
+      createdAt: DateTime.now(),
       description: _descriptionController.text,
     );
 
@@ -76,9 +60,7 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
     _toController.text = initialText;
     _fromController.text = initialText;
 
-    Navigator.of(
-      context,
-    ).pop(EditPaymentResult(payment: payment, action: _action));
+    Navigator.of(context).pop(NewPaymentResult(payment: payment));
   }
 
   String text = "";
@@ -91,14 +73,14 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
   );
 
   @override
-  Widget build(BuildContext context) => _payment == null
+  Widget build(BuildContext context) => _contact == null
       ? loading()
       : Scaffold(
           appBar: AppBar(
             backgroundColor: ColorScheme.of(context).primary,
             iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
             title: Text(
-              'Alterar Pagamento',
+              'Registrar Pagamento',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: ColorScheme.of(context).onPrimary,
@@ -106,12 +88,7 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
             ),
             leading: BackButton(
               onPressed: () {
-                Navigator.of(context).pop(
-                  EditPaymentResult(
-                    payment: null,
-                    action: EditPaymentPageAction.none,
-                  ),
-                );
+                Navigator.of(context).pop(NewPaymentResult(payment: null));
               },
             ),
           ),
@@ -134,23 +111,18 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
                         ],
                         controller: _toController,
                         onChanged: (text) {
-                          final newSendingValue =
-                              (CurrencyInputFormatter.formatter.parse(
-                                        text == "" ? "0" : text,
-                                      ) *
-                                      100)
-                                  .floor();
-
-                          if (newSendingValue != sendingValue) {
-                            setState(() {
-                              _action = EditPaymentPageAction.value;
-                              sendingValue = newSendingValue;
-                            });
-                          }
+                          setState(() {
+                            sendingValue =
+                                (CurrencyInputFormatter.formatter.parse(
+                                          text == "" ? "0" : text,
+                                        ) *
+                                        100)
+                                    .floor();
+                          });
                         },
                         onSubmitted: sendingValue == 0 && receivingValue == 0
                             ? null
-                            : (_) => _editPayment(),
+                            : (_) => _addPayment(),
                         readOnly: receivingValue != 0,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
@@ -175,25 +147,21 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
                         ],
                         controller: _fromController,
                         onChanged: (text) {
-                          final newReceivingValue =
-                              (CurrencyInputFormatter.formatter.parse(text) *
-                                      100)
-                                  .floor();
-                          if (receivingValue != newReceivingValue) {
-                            setState(() {
-                              _action = EditPaymentPageAction.value;
-                              receivingValue = newReceivingValue;
-                            });
-                          }
+                          setState(() {
+                            receivingValue =
+                                (CurrencyInputFormatter.formatter.parse(text) *
+                                        100)
+                                    .floor();
+                          });
                         },
                         onSubmitted: sendingValue == 0 && receivingValue == 0
                             ? null
-                            : (_) => _editPayment(),
+                            : (_) => _addPayment(),
                         readOnly: sendingValue != 0,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(),
-                          labelText: _payment!.contactName,
+                          labelText: _contact!.name,
                         ),
                       ),
                     ),
@@ -201,18 +169,12 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
                 ),
                 SizedBox(
                   width: MediaQuery.of(context).size.width - 105,
+
                   child: TextField(
                     controller: _descriptionController,
                     onSubmitted: sendingValue == 0 && receivingValue == 0
                         ? null
-                        : (_) => _editPayment(),
-                    onChanged: (text) {
-                      if (_action == EditPaymentPageAction.none) {
-                        setState(() {
-                          _action = EditPaymentPageAction.description;
-                        });
-                      }
-                    },
+                        : (_) => _addPayment(),
                     keyboardType: TextInputType.text,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
@@ -229,7 +191,7 @@ class _EditPaymentPageState extends State<EditPaymentPage> {
             ),
             onPressed: sendingValue == 0 && receivingValue == 0
                 ? null
-                : () => _editPayment(),
+                : () => _addPayment(),
             icon: Icon(Icons.save),
             iconSize: 30,
             color: ColorScheme.of(context).onPrimary,

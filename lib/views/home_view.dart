@@ -4,19 +4,19 @@ import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/preferences_model.dart';
 import 'package:myledger/services/database_service.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeView extends StatefulWidget {
+  const HomeView({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomeViewState extends State<HomeView> {
   List<ContactObject> _contactList = <ContactObject>[];
   ContactCompareKey _compareKey = ContactCompareKey.balance;
   bool _listIsReversed = false;
 
-  _HomePageState() {
+  _HomeViewState() {
     loadState();
   }
 

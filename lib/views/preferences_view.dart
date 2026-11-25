@@ -8,14 +8,14 @@ import 'package:myledger/notifiers/preferences_notifier.dart';
 import 'package:myledger/services/database_service.dart';
 import 'package:provider/provider.dart';
 
-class PreferencesPage extends StatefulWidget {
-  const PreferencesPage({super.key});
+class PreferencesView extends StatefulWidget {
+  const PreferencesView({super.key});
 
   @override
-  State<PreferencesPage> createState() => _PreferencesPageState();
+  State<PreferencesView> createState() => _PreferencesViewState();
 }
 
-class _PreferencesPageState extends State<PreferencesPage> {
+class _PreferencesViewState extends State<PreferencesView> {
   PreferenceNotifier? _preferences;
   final PreferencePageActions _actions = PreferencePageActions();
 

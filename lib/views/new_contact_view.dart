@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:myledger/models/contact_model.dart';
 
-class NewContactPage extends StatefulWidget {
-  const NewContactPage({super.key});
+class NewContactView extends StatefulWidget {
+  const NewContactView({super.key});
 
   @override
-  State<NewContactPage> createState() => _NewContactPageState();
+  State<NewContactView> createState() => _NewContactViewState();
 }
 
-class _NewContactPageState extends State<NewContactPage> {
+class _NewContactViewState extends State<NewContactView> {
   final TextEditingController _controller = TextEditingController();
 
   String text = "";

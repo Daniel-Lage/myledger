@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:myledger/notifiers/preferences_notifier.dart';
-import 'package:myledger/pages/edit_payment_page.dart';
-import 'package:myledger/pages/home_page.dart';
-import 'package:myledger/pages/contact_page.dart';
-import 'package:myledger/pages/new_contact_page.dart';
-import 'package:myledger/pages/new_payment_page.dart';
-import 'package:myledger/pages/payment_page.dart';
-import 'package:myledger/pages/preferences_page.dart';
+import 'package:myledger/views/edit_payment_view.dart';
+import 'package:myledger/views/home_view.dart';
+import 'package:myledger/views/contact_view.dart';
+import 'package:myledger/views/new_contact_view.dart';
+import 'package:myledger/views/new_payment_view.dart';
+import 'package:myledger/views/payment_view.dart';
+import 'package:myledger/views/preferences_view.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:provider/provider.dart';
 
@@ -60,13 +60,13 @@ class MyApp extends StatelessWidget {
     ),
     initialRoute: '/',
     routes: {
-      '/': (context) => HomePage(),
-      '/contact': (context) => ContactPage(),
-      '/preferences': (context) => PreferencesPage(),
-      '/new_contact': (context) => NewContactPage(),
-      '/new_payment': (context) => NewPaymentPage(),
-      '/edit_payment': (context) => EditPaymentPage(),
-      '/payment': (context) => PaymentPage(),
+      '/': (context) => HomeView(),
+      '/contact': (context) => ContactView(),
+      '/preferences': (context) => PreferencesView(),
+      '/new_contact': (context) => NewContactView(),
+      '/new_payment': (context) => NewPaymentView(),
+      '/edit_payment': (context) => EditPaymentView(),
+      '/payment': (context) => PaymentView(),
     },
   );
 }

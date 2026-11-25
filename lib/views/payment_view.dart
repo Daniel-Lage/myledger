@@ -4,14 +4,14 @@ import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
 import 'package:myledger/services/database_service.dart';
 
-class PaymentPage extends StatefulWidget {
-  const PaymentPage({super.key});
+class PaymentView extends StatefulWidget {
+  const PaymentView({super.key});
 
   @override
-  State<PaymentPage> createState() => _PaymentPageState();
+  State<PaymentView> createState() => _PaymentViewState();
 }
 
-class _PaymentPageState extends State<PaymentPage> {
+class _PaymentViewState extends State<PaymentView> {
   PaymentPageAction _action = PaymentPageAction.none;
 
   PaymentObject? _payment;
