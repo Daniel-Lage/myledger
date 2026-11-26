@@ -39,11 +39,6 @@ class PaymentViewModel extends ChangeNotifier {
     action = PaymentViewAction.update;
 
     notifyListeners();
-
-    print("payment_viewmodel.dart: updatePayment() result:");
-    print(action);
-    print(payment);
-    print(payment.value);
   }
 
   Future<void> deletePayment() async {

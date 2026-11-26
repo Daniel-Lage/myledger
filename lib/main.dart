@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -23,9 +24,22 @@ import 'package:myledger/views/preferences_view.dart';
 import 'package:myledger/viewmodels/home_viewmodel.dart';
 import 'package:myledger/viewmodels/preferences_viewmodel.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite3/open.dart' as sqlite3_open;
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isLinux) {
+    sqlite3_open.open.overrideFor(sqlite3_open.OperatingSystem.linux, () {
+      try {
+        return DynamicLibrary.open('libsqlite3.so');
+      } catch (_) {
+        return DynamicLibrary.open('libsqlite3.so.0');
+      }
+    });
+  }
+
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;

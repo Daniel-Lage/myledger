@@ -67,11 +67,6 @@ class _PaymentViewState extends State<PaymentView> {
       extra: EditPaymentArguments(payment: widget.viewModel.payment),
     );
 
-    print("payment_view.dart: _goToEditPayment() result:");
-    print(result?.action);
-    print(result?.payment);
-    print(result?.payment?.value);
-
     if (result?.action == EditPaymentViewAction.none ||
         result?.payment == null) {
       return;

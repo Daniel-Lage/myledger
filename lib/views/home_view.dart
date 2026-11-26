@@ -18,8 +18,6 @@ class _HomeViewState extends State<HomeView> {
   Future<void> _goToNewContact() async {
     final result = await context.push<NewContactResult>('/new_contact');
 
-    print(result?.contact);
-
     if (result?.contact == null) return;
 
     await widget.viewModel.addContact(result!.contact!);
