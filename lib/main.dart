@@ -54,37 +54,53 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+Widget _changeNotifierRoute<T extends ChangeNotifier>({
+  required T Function(BuildContext context) create,
+  required Widget Function(T viewModel) builder,
+}) => ChangeNotifierProvider<T>(
+  create: create,
+  child: Consumer<T>(
+    builder: (context, viewModel, child) => builder(viewModel),
+  ),
+);
+
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router = GoRouter(
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => HomeView(
-          viewModel: HomeViewModel(contactRepository: context.read()),
+        builder: (context, state) => _changeNotifierRoute<HomeViewModel>(
+          create: (context) => HomeViewModel(contactRepository: context.read()),
+          builder: (viewModel) => HomeView(viewModel: viewModel),
         ),
       ),
       GoRoute(
         path: '/preferences',
-        builder: (context, state) => PreferencesView(
-          viewModel: PreferencesViewModel(contactRepository: context.read()),
+        builder: (context, state) => _changeNotifierRoute<PreferencesViewModel>(
+          create: (context) =>
+              PreferencesViewModel(contactRepository: context.read()),
+          builder: (viewModel) => PreferencesView(viewModel: viewModel),
         ),
       ),
       GoRoute(
         path: '/new_contact',
-        builder: (context, state) =>
-            NewContactView(viewModel: NewContactViewModel()),
+        builder: (context, state) => _changeNotifierRoute<NewContactViewModel>(
+          create: (context) => NewContactViewModel(),
+          builder: (viewModel) => NewContactView(viewModel: viewModel),
+        ),
       ),
       GoRoute(
         path: '/contact',
         builder: (context, state) {
           final args = state.extra as ContactArguments;
 
-          return ContactView(
-            viewModel: ContactViewModel(
+          return _changeNotifierRoute<ContactViewModel>(
+            create: (context) => ContactViewModel(
               args.contact,
               paymentRepository: context.read(),
               contactRepository: context.read(),
             ),
+            builder: (viewModel) => ContactView(viewModel: viewModel),
           );
         },
       ),
@@ -93,7 +109,10 @@ class _MyAppState extends State<MyApp> {
         builder: (context, state) {
           final args = state.extra as NewPaymentArguments;
 
-          return NewPaymentView(viewModel: NewPaymentViewModel(args.contact));
+          return _changeNotifierRoute<NewPaymentViewModel>(
+            create: (context) => NewPaymentViewModel(args.contact),
+            builder: (viewModel) => NewPaymentView(viewModel: viewModel),
+          );
         },
       ),
       GoRoute(
@@ -101,11 +120,12 @@ class _MyAppState extends State<MyApp> {
         builder: (context, state) {
           final args = state.extra as EditPaymentArguments;
 
-          return EditPaymentView(
-            viewModel: EditPaymentViewModel(
+          return _changeNotifierRoute<EditPaymentViewModel>(
+            create: (context) => EditPaymentViewModel(
               args.payment,
               paymentRepository: context.read(),
             ),
+            builder: (viewModel) => EditPaymentView(viewModel: viewModel),
           );
         },
       ),
@@ -114,13 +134,14 @@ class _MyAppState extends State<MyApp> {
         builder: (context, state) {
           final args = state.extra as PaymentArguments;
 
-          return PaymentView(
-            viewModel: PaymentViewModel(
+          return _changeNotifierRoute<PaymentViewModel>(
+            create: (context) => PaymentViewModel(
               args.payment,
               args.contact,
               paymentRepository: context.read(),
               contactRepository: context.read(),
             ),
+            builder: (viewModel) => PaymentView(viewModel: viewModel),
           );
         },
       ),
