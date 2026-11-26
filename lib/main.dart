@@ -1,7 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/models/payment_model.dart';
 import 'package:myledger/notifiers/preferences_notifier.dart';
+import 'package:myledger/repositories/contact_repository.dart';
+import 'package:myledger/repositories/payment_repository.dart';
+import 'package:myledger/services/database_service.dart';
+import 'package:myledger/viewmodels/contact_viewmodel.dart';
+import 'package:myledger/viewmodels/edit_payment_viewmodel.dart';
+import 'package:myledger/viewmodels/new_contact_viewmodel.dart';
+import 'package:myledger/viewmodels/new_payment_viewmodel.dart';
+import 'package:myledger/viewmodels/payment_viewmodel.dart';
 import 'package:myledger/views/edit_payment_view.dart';
 import 'package:myledger/views/home_view.dart';
 import 'package:myledger/views/contact_view.dart';
@@ -24,21 +35,109 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PreferenceNotifier()),
-        ChangeNotifierProvider(create: (_) => HomeViewModel()),
-        ChangeNotifierProvider(create: (_) => PreferencesViewModel()),
+        Provider(
+          create: (_) => ContactRepository(database: DatabaseService.instance),
+        ),
+        Provider(
+          create: (_) => PaymentRepository(database: DatabaseService.instance),
+        ),
       ],
       child: const MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => HomeView(
+          viewModel: HomeViewModel(contactRepository: context.read()),
+        ),
+      ),
+      GoRoute(
+        path: '/preferences',
+        builder: (context, state) => PreferencesView(
+          viewModel: PreferencesViewModel(contactRepository: context.read()),
+        ),
+      ),
+      GoRoute(
+        path: '/new_contact',
+        builder: (context, state) =>
+            NewContactView(viewModel: NewContactViewModel()),
+      ),
+      GoRoute(
+        path: '/contact',
+        builder: (context, state) {
+          final args = state.extra as ContactArguments;
+
+          return ContactView(
+            viewModel: ContactViewModel(
+              args.contact,
+              paymentRepository: context.read(),
+              contactRepository: context.read(),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/new_payment',
+        builder: (context, state) {
+          final args = state.extra as NewPaymentArguments;
+
+          return NewPaymentView(viewModel: NewPaymentViewModel(args.contact));
+        },
+      ),
+      GoRoute(
+        path: '/edit_payment',
+        builder: (context, state) {
+          final args = state.extra as EditPaymentArguments;
+
+          return EditPaymentView(
+            viewModel: EditPaymentViewModel(
+              args.payment,
+              paymentRepository: context.read(),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/payment',
+        builder: (context, state) {
+          final args = state.extra as PaymentArguments;
+
+          return PaymentView(
+            viewModel: PaymentViewModel(
+              args.payment,
+              args.contact,
+              paymentRepository: context.read(),
+              contactRepository: context.read(),
+            ),
+          );
+        },
+      ),
+    ],
+  );
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => MaterialApp.router(
     debugShowCheckedModeBanner: false,
     title: 'MyLedger',
+    routerConfig: _router,
     theme: ThemeData(
       colorScheme: ColorScheme(
         primary: Colors.green,
@@ -64,15 +163,5 @@ class MyApp extends StatelessWidget {
             : Brightness.light,
       ),
     ),
-    initialRoute: '/',
-    routes: {
-      '/': (context) => HomeView(),
-      '/contact': (context) => ContactView(),
-      '/preferences': (context) => PreferencesView(),
-      '/new_contact': (context) => NewContactView(),
-      '/new_payment': (context) => NewPaymentView(),
-      '/edit_payment': (context) => EditPaymentView(),
-      '/payment': (context) => PaymentView(),
-    },
   );
 }

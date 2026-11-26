@@ -29,7 +29,7 @@ class ContactCompareFunction {
 
 enum ContactCompareKey { name, balance }
 
-enum ContactPageAction { none, update, delete }
+enum ContactViewAction { none, update, delete }
 
 class ContactArguments {
   final ContactObject contact;
@@ -39,7 +39,7 @@ class ContactArguments {
 
 class ContactResult {
   final ContactObject contact;
-  final ContactPageAction action;
+  final ContactViewAction action;
 
   ContactResult({required this.contact, required this.action});
 }

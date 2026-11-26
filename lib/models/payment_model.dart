@@ -83,12 +83,12 @@ class EditPaymentArguments {
 
 class EditPaymentResult {
   final PaymentObject? payment;
-  final EditPaymentPageAction? action;
+  final EditPaymentViewAction? action;
 
   EditPaymentResult({required this.payment, required this.action});
 }
 
-enum EditPaymentPageAction { description, value, none }
+enum EditPaymentViewAction { description, value, none }
 
 class PaymentArguments {
   final PaymentObject payment;
@@ -99,12 +99,12 @@ class PaymentArguments {
 
 class PaymentResult {
   final PaymentObject payment;
-  final PaymentPageAction action;
+  final PaymentViewAction action;
 
   PaymentResult({required this.payment, required this.action});
 }
 
-enum PaymentPageAction { delete, update, none }
+enum PaymentViewAction { delete, update, none }
 
 String formatSimpleDate(DateTime date) {
   return "${date.day}/${date.month}";

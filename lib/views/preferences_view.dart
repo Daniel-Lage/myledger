@@ -1,81 +1,83 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myledger/models/preferences_model.dart';
 import 'package:myledger/viewmodels/preferences_viewmodel.dart';
-import 'package:provider/provider.dart';
 
 class PreferencesView extends StatefulWidget {
-  const PreferencesView({super.key});
+  final PreferencesViewModel viewModel;
+  const PreferencesView({super.key, required this.viewModel});
 
   @override
   State<PreferencesView> createState() => _PreferencesViewState();
 }
 
 class _PreferencesViewState extends State<PreferencesView> {
-  Future<void> _eraseDataDialogBuilder(BuildContext context) =>
-      showDialog<void>(
-        context: context,
-        builder: (BuildContext context) => AlertDialog(
-          title: Text("Apagar dados?"),
-          content: Text("Dados excluidos não poderão ser reconstituidos."),
-          actions: [
-            IconButton(
-              onPressed: () {
-                context.read<PreferencesViewModel>().eraseData();
-                Navigator.of(context).pop();
-              },
-              icon: Icon(Icons.remove),
-              style: IconButton.styleFrom(backgroundColor: Colors.red),
-            ),
-          ],
-        ),
-      );
+  // Future<void> _eraseDataDialogBuilder(BuildContext context) =>
+  //     showDialog<void>(
+  //       context: context,
+  //       builder: (BuildContext context) => AlertDialog(
+  //         title: Text("Apagar dados?"),
+  //         content: Text("Dados excluidos não poderão ser reconstituidos."),
+  //         actions: [
+  //           IconButton(
+  //             onPressed: () {
+  //               widget.viewModel.eraseData();
+  //               context.pop();
+  //             },
+  //             icon: Icon(Icons.remove),
+  //             style: IconButton.styleFrom(backgroundColor: Colors.red),
+  //           ),
+  //         ],
+  //       ),
+  //     );
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<PreferencesViewModel>();
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: ColorScheme.of(context).primary,
-        iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
-        title: Text(
-          'Preferências',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: ColorScheme.of(context).onPrimary,
+    return AnimatedBuilder(
+      animation: widget.viewModel,
+      builder: (context, child) => Scaffold(
+        appBar: AppBar(
+          backgroundColor: ColorScheme.of(context).primary,
+          iconTheme: IconThemeData(color: ColorScheme.of(context).onPrimary),
+          title: Text(
+            'Preferências',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: ColorScheme.of(context).onPrimary,
+            ),
+          ),
+          leading: BackButton(
+            onPressed: () {
+              context.pop<PreferencesResult>(
+                PreferencesResult(actions: widget.viewModel.actions),
+              );
+            },
           ),
         ),
-        leading: BackButton(
-          onPressed: () {
-            Navigator.of(context).pop(
-              PreferencesResult(actions: viewModel.actions),
-            );
-          },
+        body: ListView(
+          children: <Widget>[
+            Preference(
+              title: 'Usar modo noturno',
+              enabled: widget.viewModel.isDarkTheme,
+              onDisable: () => widget.viewModel.setDarkTheme(false),
+              onEnable: () => widget.viewModel.setDarkTheme(true),
+            ),
+            Preference(
+              unavailable: Platform.isWindows,
+              title: 'Usar contatos locais',
+              enabled: widget.viewModel.isUsingLocalContacts,
+              onDisable: () => widget.viewModel.setUsingLocalContacts(false),
+              onEnable: () => widget.viewModel.setUsingLocalContacts(true),
+            ),
+            // Action(
+            //   icon: Icons.delete,
+            //   title: 'Apagar dados',
+            //   onClick: () => _eraseDataDialogBuilder(context),
+            // ),
+          ],
         ),
-      ),
-      body: ListView(
-        children: <Widget>[
-          Preference(
-            title: 'Usar modo noturno',
-            enabled: viewModel.isDarkTheme,
-            onDisable: () => viewModel.setDarkTheme(false),
-            onEnable: () => viewModel.setDarkTheme(true),
-          ),
-          Preference(
-            unavailable: Platform.isWindows,
-            title: 'Usar contatos locais',
-            enabled: viewModel.isUsingLocalContacts,
-            onDisable: () => viewModel.setUsingLocalContacts(false),
-            onEnable: () => viewModel.setUsingLocalContacts(true),
-          ),
-          Action(
-            icon: Icons.delete,
-            title: 'Apagar dados',
-            onClick: () => _eraseDataDialogBuilder(context),
-          ),
-        ],
       ),
     );
   }

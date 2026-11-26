@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:myledger/models/contact_model.dart';
-import 'package:myledger/services/database_service.dart';
+import 'package:myledger/repositories/contact_repository.dart';
 
 class HomeViewModel extends ChangeNotifier {
-  final DatabaseService _database;
+  final ContactRepository _contactRepository;
 
-  HomeViewModel({DatabaseService? database})
-    : _database = database ?? DatabaseService.instance;
+  HomeViewModel({required ContactRepository contactRepository})
+    : _contactRepository = contactRepository {
+    load();
+  }
 
   List<ContactObject> _contacts = [];
   ContactCompareKey _compareKey = ContactCompareKey.balance;
@@ -25,7 +27,7 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _contacts = await _database.getContactsTable();
+      _contacts = await _contactRepository.list();
     } catch (error) {
       errorMessage = 'Não foi possível carregar os contatos.';
     } finally {
@@ -35,13 +37,13 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> addContact(ContactObject contact) async {
-    await _database.addContact(contact);
+    await _contactRepository.create(contact);
     _contacts = [..._contacts, contact];
     notifyListeners();
   }
 
   Future<void> updateContact(ContactObject contact) async {
-    await _database.updateContact(contact);
+    await _contactRepository.update(contact);
     final index = _contacts.indexWhere((item) => item.name == contact.name);
     if (index != -1) {
       _contacts[index] = contact;
@@ -50,18 +52,18 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteContact(ContactObject contact) async {
-    await _database.deleteContact(contact.name);
+    await _contactRepository.delete(contact.name);
     _contacts.removeWhere((item) => item.name == contact.name);
     notifyListeners();
   }
 
   Future<void> handleContactResult(ContactResult result) async {
     switch (result.action) {
-      case ContactPageAction.update:
+      case ContactViewAction.update:
         await updateContact(result.contact);
-      case ContactPageAction.delete:
+      case ContactViewAction.delete:
         await deleteContact(result.contact);
-      case ContactPageAction.none:
+      case ContactViewAction.none:
         break;
     }
   }

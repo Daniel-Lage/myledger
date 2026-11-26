@@ -4,23 +4,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/preferences_model.dart';
-import 'package:myledger/services/database_service.dart';
+import 'package:myledger/repositories/contact_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesViewModel extends ChangeNotifier {
-  PreferencesViewModel({DatabaseService? database})
-    : _database = database ?? DatabaseService.instance {
+  final ContactRepository _contactRepository;
+
+  PreferencesViewModel({required ContactRepository contactRepository})
+    : _contactRepository = contactRepository {
     _load();
   }
 
-  final DatabaseService _database;
   bool _isDarkTheme = false;
   bool _isUsingLocalContacts = false;
-  final PreferencePageActions _actions = PreferencePageActions();
+  final PreferenceViewActions _actions = PreferenceViewActions();
 
   bool get isDarkTheme => _isDarkTheme;
   bool get isUsingLocalContacts => _isUsingLocalContacts;
-  PreferencePageActions get actions => _actions;
+  PreferenceViewActions get actions => _actions;
 
   Future<void> _load() async {
     final preferences = await SharedPreferences.getInstance();
@@ -50,13 +51,13 @@ class PreferencesViewModel extends ChangeNotifier {
     if (!Platform.isWindows && await FlutterContacts.requestPermission()) {
       if (value) {
         for (final contact in await FlutterContacts.getContacts()) {
-          await _database.addContact(
+          await _contactRepository.create(
             ContactObject(name: contact.displayName),
           );
         }
       } else {
         for (final contact in await FlutterContacts.getContacts()) {
-          await _database.deleteContact(contact.displayName);
+          await _contactRepository.delete(contact.displayName);
         }
       }
     }
@@ -64,9 +65,9 @@ class PreferencesViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> eraseData() async {
-    await _database.resetDatabase();
-    _actions.dataErased = true;
-    notifyListeners();
-  }
+  // Future<void> eraseData() async {
+  //   await _database.resetDatabase();
+  //   _actions.dataErased = true;
+  //   notifyListeners();
+  // }
 }

@@ -44,23 +44,11 @@ class ContactComponent extends StatelessWidget {
                 children: [
                   Text(
                     (contact.balance > 0 ? "+" : "-"),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20,
-                      color: contact.balance > 0
-                          ? ColorScheme.of(context).primary
-                          : ColorScheme.of(context).onPrimary,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
                   ),
                   Text(
                     PaymentObject.formatCurrency(contact.balance.abs()),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20,
-                      color: contact.balance > 0
-                          ? ColorScheme.of(context).primary
-                          : ColorScheme.of(context).onPrimary,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
                   ),
                 ],
               ),

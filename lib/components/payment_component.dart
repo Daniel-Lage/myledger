@@ -36,7 +36,7 @@ class PaymentComponent extends StatelessWidget {
               spacing: payment.type == PaymentType.receiving ? 0 : 3,
               children: [
                 Text(
-                  (payment.type == PaymentType.receiving ? "+" : "-"),
+                  (payment.type == PaymentType.sending ? "+" : "-"),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 20,
