@@ -65,7 +65,8 @@ class _PreferencesViewState extends State<PreferencesView> {
               onEnable: () => widget.viewModel.setDarkTheme(true),
             ),
             Preference(
-              unavailable: Platform.isWindows,
+              unavailable:
+                  Platform.isWindows || Platform.isLinux || Platform.isMacOS,
               title: 'Usar contatos locais',
               enabled: widget.viewModel.isUsingLocalContacts,
               onDisable: () => widget.viewModel.setUsingLocalContacts(false),
