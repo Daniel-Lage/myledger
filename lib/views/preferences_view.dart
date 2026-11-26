@@ -14,24 +14,24 @@ class PreferencesView extends StatefulWidget {
 }
 
 class _PreferencesViewState extends State<PreferencesView> {
-  // Future<void> _eraseDataDialogBuilder(BuildContext context) =>
-  //     showDialog<void>(
-  //       context: context,
-  //       builder: (BuildContext context) => AlertDialog(
-  //         title: Text("Apagar dados?"),
-  //         content: Text("Dados excluidos não poderão ser reconstituidos."),
-  //         actions: [
-  //           IconButton(
-  //             onPressed: () {
-  //               widget.viewModel.eraseData();
-  //               context.pop();
-  //             },
-  //             icon: Icon(Icons.remove),
-  //             style: IconButton.styleFrom(backgroundColor: Colors.red),
-  //           ),
-  //         ],
-  //       ),
-  //     );
+  Future<void> _eraseDataDialogBuilder(BuildContext context) =>
+      showDialog<void>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text("Apagar dados?"),
+          content: Text("Dados excluidos não poderão ser reconstituidos."),
+          actions: [
+            IconButton(
+              onPressed: () {
+                widget.viewModel.eraseData();
+                context.pop();
+              },
+              icon: Icon(Icons.remove),
+              style: IconButton.styleFrom(backgroundColor: Colors.red),
+            ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -71,11 +71,11 @@ class _PreferencesViewState extends State<PreferencesView> {
               onDisable: () => widget.viewModel.setUsingLocalContacts(false),
               onEnable: () => widget.viewModel.setUsingLocalContacts(true),
             ),
-            // Action(
-            //   icon: Icons.delete,
-            //   title: 'Apagar dados',
-            //   onClick: () => _eraseDataDialogBuilder(context),
-            // ),
+            Action(
+              icon: Icons.delete,
+              title: 'Apagar dados',
+              onClick: () => _eraseDataDialogBuilder(context),
+            ),
           ],
         ),
       ),

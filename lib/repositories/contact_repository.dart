@@ -78,4 +78,11 @@ class ContactRepository {
       whereArgs: [name],
     );
   }
+
+  Future<void> deleteAll() async {
+    final db = await database;
+
+    await db.delete(ContactObject.tableName);
+    await db.delete(PaymentObject.tableName);
+  }
 }

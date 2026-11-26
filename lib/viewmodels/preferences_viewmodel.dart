@@ -65,9 +65,9 @@ class PreferencesViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> eraseData() async {
-  //   await _database.resetDatabase();
-  //   _actions.dataErased = true;
-  //   notifyListeners();
-  // }
+  Future<void> eraseData() async {
+    await _contactRepository.deleteAll();
+    _actions.dataErased = true;
+    notifyListeners();
+  }
 }
