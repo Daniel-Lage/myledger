@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:myledger/components/payment_component.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
-import 'package:myledger/services/database_service.dart';
+import 'package:myledger/viewmodels/contact_viewmodel.dart';
 
 class ContactView extends StatefulWidget {
   const ContactView({super.key});
@@ -13,116 +13,47 @@ class ContactView extends StatefulWidget {
 }
 
 class _ContactViewState extends State<ContactView> {
-  ContactPageAction _action = ContactPageAction.none;
-  ContactObject? _contact;
-  List<PaymentObject> _paymentsList = <PaymentObject>[];
-
-  int sendingValue = 0;
-  int receivingValue = 0;
+  ContactViewModel? _viewModel;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ContactArguments args =
-          ModalRoute.of(context)?.settings.arguments as ContactArguments;
-
+      final args = ModalRoute.of(context)?.settings.arguments as ContactArguments;
       setState(() {
-        _contact = args.contact;
+        _viewModel = ContactViewModel(args.contact);
       });
-      loadState();
-    });
-  }
-
-  Future<void> loadState() async {
-    final paymentsTable = await DatabaseService.instance.getContactsPayments(
-      _contact!.name,
-    );
-
-    setState(() {
-      _paymentsList = paymentsTable;
-    });
-  }
-
-  void _updateBalance() {
-    var newBalance = 0;
-
-    for (var payment in _paymentsList) {
-      final value = payment.type == PaymentType.receiving
-          ? payment.value
-          : -payment.value;
-
-      newBalance += value;
-
-      DatabaseService.instance.updateContact(_contact!);
-    }
-
-    setState(() {
-      _contact!.balance = newBalance;
+      _viewModel!.load();
     });
   }
 
   Future<void> _goToNewPayment() async {
-    NewPaymentResult result =
-        await Navigator.of(context).pushNamed(
-              "/new_payment",
-              arguments: NewPaymentArguments(contact: _contact!),
-            )
-            as NewPaymentResult;
+    final viewModel = _viewModel!;
+    final result = await Navigator.of(context).pushNamed(
+      '/new_payment',
+      arguments: NewPaymentArguments(contact: viewModel.contact!),
+    ) as NewPaymentResult;
 
-    if (result.payment == null) return; // null if payment creation is cancelled
-
-    final newPayment = result.payment!;
-
-    newPayment.id = await DatabaseService.instance.addPayment(newPayment);
-
-    setState(() {
-      _paymentsList.add(newPayment);
-      _updateBalance();
-      _action = ContactPageAction.update;
-    });
+    if (result.payment == null) return;
+    await viewModel.addPayment(result.payment!);
   }
 
   Future<void> _goToPayment(PaymentObject payment) async {
-    PaymentResult result =
-        await Navigator.of(context).pushNamed(
-              "/payment",
-              arguments: PaymentArguments(payment: payment, contact: _contact!),
-            )
-            as PaymentResult;
+    final viewModel = _viewModel!;
+    final result = await Navigator.of(context).pushNamed(
+      '/payment',
+      arguments: PaymentArguments(
+        payment: payment,
+        contact: viewModel.contact!,
+      ),
+    ) as PaymentResult;
 
     if (result.action == PaymentPageAction.none) return;
 
-    setState(() {
-      _action = ContactPageAction.update;
-    });
-
     if (result.action == PaymentPageAction.delete) {
-      await DatabaseService.instance.deletePayment(payment);
-
-      setState(() {
-        _paymentsList.removeWhere((p) => p.id == payment.id);
-      });
-
-      _updateBalance();
-    }
-
-    if (result.action == PaymentPageAction.update) {
-      final newContact = await DatabaseService.instance.getContactByName(
-        _contact!.name,
-      );
-
-      setState(() {
-        _paymentsList = _paymentsList.map((payment) {
-          if (payment.id == result.payment.id) {
-            return result.payment;
-          }
-
-          return payment;
-        }).toList();
-
-        _contact = newContact;
-      });
+      await viewModel.deletePayment(payment);
+    } else if (result.action == PaymentPageAction.update) {
+      await viewModel.updatePayment(result.payment);
     }
   }
 
@@ -155,7 +86,7 @@ class _ContactViewState extends State<ContactView> {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop(
                   ContactResult(
-                    contact: _contact!,
+                    contact: _viewModel!.contact!,
                     action: ContactPageAction.delete,
                   ),
                 );
@@ -210,7 +141,7 @@ class _ContactViewState extends State<ContactView> {
   );
 
   @override
-  Widget build(BuildContext context) => _contact == null
+  Widget build(BuildContext context) => _viewModel == null
       ? loading()
       : PopScope(
           canPop: false,
@@ -219,7 +150,7 @@ class _ContactViewState extends State<ContactView> {
             if (result == null) {
               Navigator.of(
                 context,
-              ).pop(ContactResult(contact: _contact!, action: _action));
+              ).pop(ContactResult(contact: _viewModel!.contact!, action: _viewModel!.action));
             } else {
               Navigator.of(context).pop(result);
             }
@@ -269,7 +200,7 @@ class _ContactViewState extends State<ContactView> {
                 onPressed: () {
                   Navigator.of(
                     context,
-                  ).pop(ContactResult(contact: _contact!, action: _action));
+                  ).pop(ContactResult(contact: _viewModel!.contact!, action: _viewModel!.action));
                 },
               ),
             ),
@@ -280,7 +211,7 @@ class _ContactViewState extends State<ContactView> {
                   Padding(
                     padding: const EdgeInsets.only(top: 20, left: 10),
                     child: Text(
-                      "Saldo com ${_contact!.name}",
+                      "Saldo com ${_viewModel!.contact!.name}",
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 20,
@@ -292,10 +223,10 @@ class _ContactViewState extends State<ContactView> {
                   Padding(
                     padding: const EdgeInsets.only(left: 10),
                     child: Row(
-                      spacing: _contact!.balance >= 0 ? 0 : 3,
+                      spacing: _viewModel!.contact!.balance >= 0 ? 0 : 3,
                       children: [
                         Text(
-                          _contact!.balance >= 0 ? "+" : "-",
+                          _viewModel!.contact!.balance >= 0 ? "+" : "-",
                           textAlign: TextAlign.start,
                           style: TextStyle(
                             fontSize: 30,
@@ -303,7 +234,7 @@ class _ContactViewState extends State<ContactView> {
                           ),
                         ),
                         Text(
-                          PaymentObject.formatCurrency(_contact!.balance.abs()),
+                          PaymentObject.formatCurrency(_viewModel!.contact!.balance.abs()),
                           textAlign: TextAlign.start,
                           style: TextStyle(
                             fontSize: 30,
@@ -326,7 +257,7 @@ class _ContactViewState extends State<ContactView> {
                     ),
                   ),
 
-                  ..._paymentsList.map(
+                  ..._viewModel!.payments.map(
                     (payment) => PaymentComponent(
                       payment: payment,
                       onTap: () => _goToPayment(payment),

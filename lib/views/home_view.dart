@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:myledger/components/contact_component.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/preferences_model.dart';
-import 'package:myledger/services/database_service.dart';
+import 'package:provider/provider.dart';
+import 'package:myledger/viewmodels/home_viewmodel.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -12,19 +13,11 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  List<ContactObject> _contactList = <ContactObject>[];
-  ContactCompareKey _compareKey = ContactCompareKey.balance;
-  bool _listIsReversed = false;
-
-  _HomeViewState() {
-    loadState();
-  }
-
-  Future<void> loadState() async {
-    final contactTable = await DatabaseService.instance.getContactsTable();
-
-    setState(() {
-      _contactList = contactTable;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeViewModel>().load();
     });
   }
 
@@ -33,80 +26,41 @@ class _HomeViewState extends State<HomeView> {
         await Navigator.of(context).pushNamed("/new_contact")
             as NewContactResult;
 
-    if (result.contact == null) return; // null if contact creation is cancelled
+    if (result.contact == null) return;
+    if (mounted) {
 
-    final newContact = result.contact!;
-
-    DatabaseService.instance.addContact(newContact);
-
-    setState(() {
-      _contactList.add(newContact);
-    });
+    await context.read<HomeViewModel>().addContact(result.contact!);
+    }
   }
 
   Future<void> _goToContact(ContactObject contact) async {
-    ContactResult result =
-        await Navigator.of(context).pushNamed(
-              '/contact',
-              arguments: ContactArguments(contact: contact),
-            )
-            as ContactResult;
-
-    switch (result.action) {
-      case ContactPageAction.update:
-        final updatedContact = result.contact;
-
-        final index = _contactList.indexWhere(
-          (contact) => contact.name == updatedContact.name,
-        );
-
-        setState(() {
-          _contactList[index] = updatedContact;
-        });
-        break;
-      case ContactPageAction.delete:
-        final deletedContact = result.contact;
-
-        final index = _contactList.indexWhere(
-          (contact) => contact.name == deletedContact.name,
-        );
-
-        DatabaseService.instance.deleteContact(deletedContact.name);
-
-        setState(() {
-          _contactList.removeAt(index);
-        });
-        break;
-      case ContactPageAction.none:
-        break;
+    final result = await Navigator.of(context).pushNamed(
+      '/contact',
+      arguments: ContactArguments(contact: contact),
+    ) as ContactResult;
+    if (mounted) {
+    await context.read<HomeViewModel>().handleContactResult(result);
     }
   }
 
   Future<void> _goToPrefs() async {
-    PreferencesResult result =
-        await Navigator.of(context).pushNamed("/preferences")
-            as PreferencesResult;
+    final result = await Navigator.of(context).pushNamed("/preferences")
+        as PreferencesResult;
 
-    if (result.actions.updatedIsUsingLocalContacts == true ||
-        result.actions.dataErased == true) {
-      loadState();
+    if (result.actions.updatedIsUsingLocalContacts ||
+        result.actions.dataErased) {
+    if (mounted) {
+      await context.read<HomeViewModel>().load();
     }
-  }
-
-  List<ContactObject> _getSortedContacts() {
-    switch (_compareKey) {
-      case ContactCompareKey.balance:
-        _contactList.sort((a, b) => b.balance.abs().compareTo(a.balance.abs()));
-        break;
-      case ContactCompareKey.name:
-        _contactList.sort((a, b) => a.name.compareTo(b.name));
-        break;
     }
-    return _listIsReversed ? _contactList.reversed.toList() : _contactList;
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<HomeViewModel>();
+    final compareKey = viewModel.compareKey;
+    final isReversed = viewModel.isReversed;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ColorScheme.of(context).primary,
@@ -140,17 +94,12 @@ class _HomeViewState extends State<HomeView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextButton(
-                      onPressed: () => setState(() {
-                        if (_compareKey == ContactCompareKey.name) {
-                          _listIsReversed = !_listIsReversed;
-                        } else {
-                          _compareKey = ContactCompareKey.name;
-                          _listIsReversed = false;
-                        }
-                      }),
+                      onPressed: () => viewModel.changeSort(
+                        ContactCompareKey.name,
+                      ),
                       child: Text(
                         "Nome",
-                        style: _compareKey == ContactCompareKey.name
+                        style: compareKey == ContactCompareKey.name
                             ? TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
@@ -164,10 +113,10 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ),
                     Icon(
-                      _listIsReversed
+                      isReversed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: _compareKey == ContactCompareKey.name
+                      color: compareKey == ContactCompareKey.name
                           ? ColorScheme.of(context).onSecondary
                           : Colors.transparent,
                     ),
@@ -177,17 +126,12 @@ class _HomeViewState extends State<HomeView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextButton(
-                      onPressed: () => setState(() {
-                        if (_compareKey == ContactCompareKey.balance) {
-                          _listIsReversed = !_listIsReversed;
-                        } else {
-                          _compareKey = ContactCompareKey.balance;
-                          _listIsReversed = false;
-                        }
-                      }),
+                      onPressed: () => viewModel.changeSort(
+                        ContactCompareKey.balance,
+                      ),
                       child: Text(
                         "Saldo",
-                        style: _compareKey == ContactCompareKey.balance
+                        style: compareKey == ContactCompareKey.balance
                             ? TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
@@ -201,10 +145,10 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ),
                     Icon(
-                      _listIsReversed
+                      isReversed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: _compareKey == ContactCompareKey.balance
+                      color: compareKey == ContactCompareKey.balance
                           ? ColorScheme.of(context).onSecondary
                           : Colors.transparent,
                     ),
@@ -213,7 +157,7 @@ class _HomeViewState extends State<HomeView> {
               ],
             ),
           ),
-          ..._getSortedContacts().map(
+          ...context.watch<HomeViewModel>().contacts.map(
             (contact) => ContactComponent(
               contact: contact,
               goTo: () => _goToContact(contact),

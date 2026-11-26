@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:myledger/currency_input_formatter.dart';
 import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/viewmodels/payment_viewmodels.dart';
 
 class EditPaymentView extends StatefulWidget {
   const EditPaymentView({super.key});
@@ -24,6 +25,8 @@ class _EditPaymentViewState extends State<EditPaymentView> {
   int sendingValue = 0;
   int receivingValue = 0;
 
+  EditPaymentViewModel? _viewModel;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +38,8 @@ class _EditPaymentViewState extends State<EditPaymentView> {
 
       setState(() {
         _payment = args.payment;
+
+        _viewModel = EditPaymentViewModel(args.payment);
 
         if (args.payment.type == PaymentType.sending) {
           sendingValue = args.payment.value;
@@ -57,16 +62,10 @@ class _EditPaymentViewState extends State<EditPaymentView> {
   }
 
   Future<void> _editPayment() async {
-    final value = sendingValue == 0 ? receivingValue : -sendingValue;
-
-    final payment = PaymentObject(
-      id: _payment!.id,
-      contactName: _payment!.contactName,
-      value: value.abs(),
-      type: sendingValue == 0 ? PaymentType.receiving : PaymentType.sending,
-      createdAt: _payment!.createdAt,
-      description: _descriptionController.text,
-    );
+    _viewModel!.setSendingValue(sendingValue);
+    _viewModel!.setReceivingValue(receivingValue);
+    _viewModel!.setDescription(_descriptionController.text);
+    final payment = _viewModel!.createEditedPayment();
 
     setState(() {
       sendingValue = 0;

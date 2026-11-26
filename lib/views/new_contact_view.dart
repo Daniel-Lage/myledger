@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/viewmodels/new_contact_viewmodel.dart';
 
 class NewContactView extends StatefulWidget {
   const NewContactView({super.key});
@@ -10,11 +11,10 @@ class NewContactView extends StatefulWidget {
 
 class _NewContactViewState extends State<NewContactView> {
   final TextEditingController _controller = TextEditingController();
-
-  String text = "";
+  final NewContactViewModel _viewModel = NewContactViewModel();
 
   void _addContact() {
-    final contact = ContactObject(name: text);
+    final contact = _viewModel.createContact();
     Navigator.of(context).pop(NewContactResult(contact: contact));
   }
 
@@ -43,12 +43,8 @@ class _NewContactViewState extends State<NewContactView> {
             child: TextField(
               autofocus: true,
               controller: _controller,
-              onSubmitted: (_) => text.isEmpty ? null : _addContact(),
-              onChanged: (value) {
-                setState(() {
-                  (text = value);
-                });
-              },
+              onSubmitted: (_) => _viewModel.canSubmit ? _addContact() : null,
+              onChanged: _viewModel.setName,
               keyboardType: TextInputType.text,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
@@ -63,7 +59,7 @@ class _NewContactViewState extends State<NewContactView> {
       style: IconButton.styleFrom(
         backgroundColor: ColorScheme.of(context).primary,
       ),
-      onPressed: text == "" ? null : () => _addContact(),
+      onPressed: _viewModel.canSubmit ? _addContact : null,
       icon: Icon(Icons.save),
       iconSize: 30,
       color: ColorScheme.of(context).onPrimary,

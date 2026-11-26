@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:myledger/currency_input_formatter.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/viewmodels/payment_viewmodels.dart';
 
 class NewPaymentView extends StatefulWidget {
   const NewPaymentView({super.key});
@@ -12,13 +13,12 @@ class NewPaymentView extends StatefulWidget {
 }
 
 class _NewPaymentViewState extends State<NewPaymentView> {
-  final TextEditingController _toController = TextEditingController();
-  final TextEditingController _fromController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
   final String initialText = CurrencyInputFormatter.formatter.format(0);
 
   ContactObject? _contact;
+  final NewPaymentViewModel _viewModel = NewPaymentViewModel();
 
   int sendingValue = 0;
   int receivingValue = 0;
@@ -27,8 +27,6 @@ class _NewPaymentViewState extends State<NewPaymentView> {
   @override
   void initState() {
     super.initState();
-    _toController.text = initialText;
-    _fromController.text = initialText;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NewPaymentArguments args =
           ModalRoute.of(context)?.settings.arguments as NewPaymentArguments;
@@ -42,23 +40,9 @@ class _NewPaymentViewState extends State<NewPaymentView> {
   Future<void> _addPayment() async {
     if (_contact == null) return;
 
-    final value = sendingValue == 0 ? receivingValue : -sendingValue;
-
-    final payment = PaymentObject(
-      contactName: _contact!.name,
-      value: value.abs(),
-      type: sendingValue == 0 ? PaymentType.receiving : PaymentType.sending,
-      createdAt: DateTime.now(),
-      description: _descriptionController.text,
-    );
-
-    setState(() {
-      sendingValue = 0;
-      receivingValue = 0;
-    });
-
-    _toController.text = initialText;
-    _fromController.text = initialText;
+    _viewModel.setDescription(_descriptionController.text);
+    final payment = _viewModel.createPayment(_contact!);
+    if (payment == null) return;
 
     Navigator.of(context).pop(NewPaymentResult(payment: payment));
   }
@@ -109,7 +93,6 @@ class _NewPaymentViewState extends State<NewPaymentView> {
                           FilteringTextInputFormatter.digitsOnly,
                           CurrencyInputFormatter(),
                         ],
-                        controller: _toController,
                         onChanged: (text) {
                           setState(() {
                             sendingValue =
@@ -145,7 +128,6 @@ class _NewPaymentViewState extends State<NewPaymentView> {
                           FilteringTextInputFormatter.digitsOnly,
                           CurrencyInputFormatter(),
                         ],
-                        controller: _fromController,
                         onChanged: (text) {
                           setState(() {
                             receivingValue =

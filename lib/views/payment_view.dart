@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
-import 'package:myledger/services/database_service.dart';
+import 'package:myledger/viewmodels/payment_viewmodels.dart';
 
 class PaymentView extends StatefulWidget {
   const PaymentView({super.key});
@@ -12,24 +11,15 @@ class PaymentView extends StatefulWidget {
 }
 
 class _PaymentViewState extends State<PaymentView> {
-  PaymentPageAction _action = PaymentPageAction.none;
-
-  PaymentObject? _payment;
-  ContactObject? _contact;
-
-  int sendingValue = 0;
-  int receivingValue = 0;
+  PaymentViewModel? _viewModel;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      PaymentArguments args =
-          ModalRoute.of(context)?.settings.arguments as PaymentArguments;
-
+      final args = ModalRoute.of(context)?.settings.arguments as PaymentArguments;
       setState(() {
-        _payment = args.payment;
-        _contact = args.contact;
+        _viewModel = PaymentViewModel(args.payment, args.contact);
       });
     });
   }
@@ -63,7 +53,7 @@ class _PaymentViewState extends State<PaymentView> {
                 Navigator.of(context).pop(
                   PaymentResult(
                     action: PaymentPageAction.delete,
-                    payment: _payment!,
+                    payment: _viewModel!.payment,
                   ),
                 );
               },
@@ -84,40 +74,13 @@ class _PaymentViewState extends State<PaymentView> {
       );
 
   Future<void> _goToEditPayment() async {
-    EditPaymentResult result =
-        await Navigator.of(context).pushNamed(
-              "/edit_payment",
-              arguments: EditPaymentArguments(payment: _payment!),
-            )
-            as EditPaymentResult;
+    final result = await Navigator.of(context).pushNamed(
+      '/edit_payment',
+      arguments: EditPaymentArguments(payment: _viewModel!.payment),
+    ) as EditPaymentResult;
 
     if (result.action == EditPaymentPageAction.none) return;
-
-    await DatabaseService.instance.updatePayment(result.payment!);
-
-    setState(() {
-      _action = PaymentPageAction.update;
-    });
-
-    if (result.action == EditPaymentPageAction.value) {
-      setState(() {
-        final oldValue = _payment!.type == PaymentType.receiving
-            ? _payment!.value
-            : -_payment!.value;
-
-        final newValue = result.payment!.type == PaymentType.receiving
-            ? result.payment!.value
-            : -result.payment!.value;
-
-        _contact!.balance += newValue - oldValue;
-      });
-
-      await DatabaseService.instance.updateContact(_contact!);
-    }
-
-    setState(() {
-      _payment = result.payment!;
-    });
+    await _viewModel!.updatePayment(result.payment!);
   }
 
   Widget loading() => Scaffold(
@@ -154,7 +117,7 @@ class _PaymentViewState extends State<PaymentView> {
   );
 
   @override
-  Widget build(BuildContext context) => _payment == null
+  Widget build(BuildContext context) => _viewModel == null
       ? loading()
       : PopScope(
           canPop: false,
@@ -163,7 +126,7 @@ class _PaymentViewState extends State<PaymentView> {
             if (args == null) {
               Navigator.of(
                 context,
-              ).pop(PaymentResult(action: _action, payment: _payment!));
+              ).pop(PaymentResult(action: _viewModel!.action, payment: _viewModel!.payment));
             } else {
               Navigator.of(context).pop(args);
             }
@@ -219,7 +182,7 @@ class _PaymentViewState extends State<PaymentView> {
                 onPressed: () {
                   Navigator.of(
                     context,
-                  ).pop(PaymentResult(action: _action, payment: _payment!));
+                  ).pop(PaymentResult(action: _viewModel!.action, payment: _viewModel!.payment));
                 },
               ),
             ),
@@ -232,7 +195,7 @@ class _PaymentViewState extends State<PaymentView> {
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: Text(
-                      "Pagamento ${_payment!.type == PaymentType.receiving ? "de" : "para"} ${_contact!.name}",
+                      "Pagamento ${_viewModel!.payment.type == PaymentType.receiving ? "de" : "para"} ${_viewModel!.contact.name}",
                       textAlign: TextAlign.start,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -242,7 +205,7 @@ class _PaymentViewState extends State<PaymentView> {
                   ),
 
                   Text(
-                    PaymentObject.formatCurrency(_payment!.value),
+                    PaymentObject.formatCurrency(_viewModel!.payment.value),
                     textAlign: TextAlign.start,
                     style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
                   ),
@@ -250,7 +213,7 @@ class _PaymentViewState extends State<PaymentView> {
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: Text(
-                      formatDate(_payment!.createdAt!),
+                      formatDate(_viewModel!.payment.createdAt!),
                       textAlign: TextAlign.start,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
@@ -263,9 +226,9 @@ class _PaymentViewState extends State<PaymentView> {
                   Padding(
                     padding: const EdgeInsets.only(top: 20),
                     child: Text(
-                      _payment!.description! == ""
+                      _viewModel!.payment.description! == ""
                           ? "Pagamento sem descrição"
-                          : _payment!.description!,
+                          : _viewModel!.payment.description!,
                       textAlign: TextAlign.start,
                       style: TextStyle(
                         fontSize: 18,

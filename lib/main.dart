@@ -9,6 +9,8 @@ import 'package:myledger/views/new_contact_view.dart';
 import 'package:myledger/views/new_payment_view.dart';
 import 'package:myledger/views/payment_view.dart';
 import 'package:myledger/views/preferences_view.dart';
+import 'package:myledger/viewmodels/home_viewmodel.dart';
+import 'package:myledger/viewmodels/preferences_viewmodel.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:provider/provider.dart';
 
@@ -19,8 +21,12 @@ Future<void> main() async {
   }
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => PreferenceNotifier(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PreferenceNotifier()),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => PreferencesViewModel()),
+      ],
       child: const MyApp(),
     ),
   );
