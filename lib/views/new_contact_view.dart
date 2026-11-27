@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myledger/models/contact_model.dart';
+import 'package:myledger/routing/routes.dart';
 import 'package:myledger/viewmodels/new_contact_viewmodel.dart';
 
 class NewContactView extends StatefulWidget {

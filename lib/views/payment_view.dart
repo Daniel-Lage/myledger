@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/routing/routes.dart';
 import 'package:myledger/viewmodels/payment_viewmodel.dart';
 
 class PaymentView extends StatefulWidget {
@@ -64,7 +65,7 @@ class _PaymentViewState extends State<PaymentView> {
   Future<void> _goToEditPayment() async {
     final result = await context.push<EditPaymentResult>(
       '/edit_payment',
-      extra: EditPaymentArguments(payment: widget.viewModel.payment),
+      extra: EditPaymentExtra(payment: widget.viewModel.payment),
     );
 
     if (result?.action == EditPaymentViewAction.none ||

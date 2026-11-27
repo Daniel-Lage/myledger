@@ -4,6 +4,7 @@ import 'package:myledger/components/contact_component.dart';
 import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
 import 'package:myledger/models/preferences_model.dart';
+import 'package:myledger/routing/routes.dart';
 import 'package:myledger/viewmodels/home_viewmodel.dart';
 
 class HomeView extends StatefulWidget {
@@ -26,7 +27,7 @@ class _HomeViewState extends State<HomeView> {
   Future<void> _goToContact(ContactObject contact) async {
     final result = await context.push<ContactResult>(
       '/contact',
-      extra: ContactArguments(contact: contact),
+      extra: ContactExtra(contact: contact),
     );
 
     if (result == null) return;

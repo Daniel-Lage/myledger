@@ -1,5 +1,4 @@
 import 'package:intl/intl.dart';
-import 'package:myledger/models/contact_model.dart';
 
 class PaymentObject {
   static String tableName = "payments";
@@ -62,49 +61,6 @@ class PaymentObject {
 }
 
 enum PaymentType { receiving, sending }
-
-class NewPaymentArguments {
-  final ContactObject contact;
-
-  NewPaymentArguments({required this.contact});
-}
-
-class NewPaymentResult {
-  final PaymentObject? payment;
-
-  NewPaymentResult({required this.payment});
-}
-
-class EditPaymentArguments {
-  final PaymentObject payment;
-
-  EditPaymentArguments({required this.payment});
-}
-
-class EditPaymentResult {
-  final PaymentObject? payment;
-  final EditPaymentViewAction? action;
-
-  EditPaymentResult({required this.payment, required this.action});
-}
-
-enum EditPaymentViewAction { description, value, none }
-
-class PaymentArguments {
-  final PaymentObject payment;
-  final ContactObject contact;
-
-  PaymentArguments({required this.payment, required this.contact});
-}
-
-class PaymentResult {
-  final PaymentObject payment;
-  final PaymentViewAction action;
-
-  PaymentResult({required this.payment, required this.action});
-}
-
-enum PaymentViewAction { delete, update, none }
 
 String formatSimpleDate(DateTime date) {
   return "${date.day}/${date.month}";

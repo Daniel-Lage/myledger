@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myledger/currency_input_formatter.dart';
-import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/routing/routes.dart';
 import 'package:myledger/viewmodels/new_payment_viewmodel.dart';
 
 class NewPaymentView extends StatefulWidget {

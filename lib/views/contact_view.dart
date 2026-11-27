@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myledger/components/payment_component.dart';
-import 'package:myledger/models/contact_model.dart';
 import 'package:myledger/models/payment_model.dart';
+import 'package:myledger/routing/routes.dart';
 import 'package:myledger/viewmodels/contact_viewmodel.dart';
 
 class ContactView extends StatefulWidget {
@@ -16,8 +16,8 @@ class ContactView extends StatefulWidget {
 class _ContactViewState extends State<ContactView> {
   Future<void> _goToNewPayment() async {
     final result = await context.push<NewPaymentResult>(
-      '/new_payment',
-      extra: NewPaymentArguments(contact: widget.viewModel.contact),
+      newPaymentPath,
+      extra: NewPaymentExtra(contact: widget.viewModel.contact),
     );
 
     final payment = result?.payment;
@@ -28,10 +28,7 @@ class _ContactViewState extends State<ContactView> {
   Future<void> _goToPayment(PaymentObject payment) async {
     final result = await context.push<PaymentResult>(
       '/payment',
-      extra: PaymentArguments(
-        payment: payment,
-        contact: widget.viewModel.contact,
-      ),
+      extra: PaymentExtra(payment: payment, contact: widget.viewModel.contact),
     );
 
     if (result == null) return;

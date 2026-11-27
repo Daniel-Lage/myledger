@@ -28,24 +28,3 @@ class ContactCompareFunction {
 }
 
 enum ContactCompareKey { name, balance }
-
-enum ContactViewAction { none, update, delete }
-
-class ContactArguments {
-  final ContactObject contact;
-
-  ContactArguments({required this.contact});
-}
-
-class ContactResult {
-  final ContactObject contact;
-  final ContactViewAction action;
-
-  ContactResult({required this.contact, required this.action});
-}
-
-class NewContactResult {
-  final ContactObject? contact;
-
-  NewContactResult({required this.contact});
-}
